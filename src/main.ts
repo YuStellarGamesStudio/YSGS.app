@@ -1,6 +1,7 @@
 import './style.css';
 import { gameText, loadCatalog, type Catalog, type Game } from './catalog';
 import { defaultLocale, isLocale, localeMeta, locales, messages, type Locale, type Messages } from './i18n';
+import type { Stage, StageState } from './stage';
 
 type Theme = 'dark' | 'light';
 type Route = { view: 'home' } | { view: 'games' } | { view: 'game'; id: string } | { view: 'data' } | { view: 'missing' };
@@ -125,7 +126,20 @@ const footerData = h('a', { href: DATA_REPO_URL, rel: 'noopener noreferrer', tar
 const footerCopy = h('span');
 const footer = h('footer', { class: 'site-footer' }, h('div', { class: 'footer-inner' }, footerCopy, h('span', { class: 'footer-links' }, footerSource, footerData)));
 
-app.replaceChildren(skipLink, header, main, footer);
+const stageCanvas = h('canvas', { class: 'stage', 'aria-hidden': 'true' });
+let stage: Stage | null = null;
+
+app.replaceChildren(stageCanvas, skipLink, header, main, footer);
+
+function stageState(route: Route): StageState {
+  const catalog = state.catalog;
+  return {
+    theme: state.theme,
+    view: route.view,
+    motion: !reducedMotion.matches,
+    data: { games: catalog?.games.length ?? 0, genres: catalog ? usedGenres(catalog).map(([, count]) => count) : [] },
+  };
+}
 
 function updateChrome(route: Route): void {
   const root = document.documentElement;
@@ -155,6 +169,7 @@ function updateChrome(route: Route): void {
   footerSource.textContent = t.footerSource;
   footerData.textContent = t.footerData;
   footerCopy.textContent = `© ${new Date().getFullYear()} YuStellarGamesStudio`;
+  stage?.update(stageState(route));
 }
 
 // ---------- Shared pieces ----------
@@ -577,5 +592,23 @@ skipLink.addEventListener('click', (event) => {
   main.focus();
 });
 window.addEventListener('hashchange', () => render(true));
+reducedMotion.addEventListener('change', () => stage?.update(stageState(parseRoute())));
+window.addEventListener('pointermove', (event) => {
+  if (!reducedMotion.matches) stage?.setPointer((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);
+});
 
 void startLoading();
+
+// The engine loads as a separate chunk so the DOM UI never waits on it; without
+// WebGPU/WebGL2 the CSS background stays in place.
+void import('./stage')
+  .then(({ createStage }) => createStage(stageCanvas, stageState(parseRoute())))
+  .then((created) => {
+    stage = created;
+    if (created) document.documentElement.classList.add('has-stage');
+    else stageCanvas.remove();
+  })
+  .catch((error: unknown) => {
+    console.warn('3D stage failed to load:', error);
+    stageCanvas.remove();
+  });

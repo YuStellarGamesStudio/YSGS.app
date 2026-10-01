@@ -90,6 +90,37 @@ body {
   flex-direction: column;
 }
 
+/* XYZ.js 3D backdrop (src/stage.ts). Until it is ready, or when no 3D backend
+   exists, the CSS grid background above stays visible. */
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s var(--ease);
+}
+
+.has-stage .stage {
+  opacity: 1;
+}
+
+.has-stage body {
+  background: transparent;
+}
+
+/* The 3D core replaces the CSS orbit; keep the box so the hero layout is unchanged. */
+.has-stage .hero-visual > * {
+  visibility: hidden;
+}
+
+.has-stage :is(.panel, .game-card, .stat-tile, .status-panel, .btn-ghost) {
+  backdrop-filter: blur(10px) saturate(1.3);
+}
+
 a {
   color: var(--accent);
   text-underline-offset: 0.2em;
