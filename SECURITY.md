@@ -29,8 +29,8 @@ The `CNAME` file records `ysgs.app`. This does not establish ownership of every 
 The following remain unverified:
 
 - The live site's hosting configuration, whether the committed GitHub Actions workflows have been enabled or executed successfully, and the deployed revision.
-- DNS records, domain renewal controls, HTTPS enforcement, and certificate status.
-- HTTP response headers, redirects, caching behavior, and third-party resources.
+- DNS records, domain renewal controls, and certificate status.
+- HTTP response headers and redirects beyond the spot checks recorded in section 6.4, caching behavior, and third-party resources.
 - Whether GitHub private vulnerability reporting is enabled for this repository.
 - Repository access controls, branch protections, deployment environment protections, and any security tooling beyond the committed workflow definitions.
 
@@ -209,7 +209,9 @@ Verify which headers the hosting platform can actually set. HTML metadata does n
 
 The game player uses a sandbox permitting only scripts, same-origin storage for cross-origin games, and pointer lock. Same-origin launch URLs do not receive `allow-same-origin`, so embedded scripts cannot remove their sandbox through parent DOM access. Top-level navigation, popups, form submission, and downloads are not granted. Local headless Chromium verification confirmed that a cross-origin fixture executed scripts and used localStorage while a clicked top-level navigation did not replace the host page. This does not verify compatibility with every published game.
 
-The README documents a Cloudflare response-header rule scoped to `ysgs.app` for `Content-Security-Policy: frame-ancestors 'none';` and `X-Frame-Options: DENY`. GitHub Pages does not consume a repository `_headers` file for this purpose. These response-header protections require deployment by a Cloudflare administrator; they have not been applied or verified by this source change.
+The README documents a Cloudflare response-header rule scoped to `ysgs.app` for `Content-Security-Policy: frame-ancestors 'none';` and `X-Frame-Options: DENY`. GitHub Pages does not consume a repository `_headers` file for this purpose. On 2026-10-02, responses from `https://ysgs.app/` and `https://ysgs.app/?play=airhive` included both headers, and headless Chromium refused to render `https://ysgs.app/` inside an iframe on `https://example.com/`. This verifies only those URLs at that time; rule changes in Cloudflare can change the result.
+
+On the same date, `https://ysgs.app/`, `https://www.ysgs.app/`, `https://data.ysgs.app/`, and `https://airhive.ysgs.app/` returned `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`, and `http://ysgs.app/` and `http://www.ysgs.app/` redirected to HTTPS on the same host. Because `includeSubDomains` covers every subdomain, any new subdomain must serve valid HTTPS before use. The hstspreload.org API reported no preload eligibility errors or warnings for `ysgs.app` and listed its status as `preloaded` through the `.app` top-level domain entry, so browsers with that list already require HTTPS for the domain independently of this header.
 
 ### 6.5 Third-party content and privacy
 
