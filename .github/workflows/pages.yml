@@ -3,6 +3,9 @@ name: GitHub Pages
 on:
   push:
     branches: [main]
+  # Rebuild periodically so the sitemap follows the GameCatalog.
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:

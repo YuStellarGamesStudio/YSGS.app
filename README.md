@@ -153,7 +153,7 @@ LICENSE                       # 授權條款
 
 ### GitHub Pages 部署
 
-[Pages workflow](.github/workflows/pages.yml) 在推送至 `main` 或手動執行時觸發；工作僅允許在 `main` 上執行。
+[Pages workflow](.github/workflows/pages.yml) 在推送至 `main`、手動執行或每 5 分鐘排程（cron `*/5 * * * *`，供 sitemap 追上 GameCatalog 的更新）時觸發；工作僅允許在 `main` 上執行。GitHub 可能延遲或略過排程執行，且排程只會在預設分支上運作。
 
 ```text
 推送 main／手動執行 main
