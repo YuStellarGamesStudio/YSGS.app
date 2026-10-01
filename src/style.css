@@ -348,6 +348,69 @@ input {
   gap: 0.6rem;
 }
 
+.music-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: none;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.music-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 2.3rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.music-toggle[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.music-toggle:not(:disabled):hover {
+  background: var(--surface-hi);
+  color: var(--text);
+}
+
+.music-toggle[data-state='error'] {
+  color: var(--danger);
+}
+
+.music-toggle:disabled {
+  color: var(--muted);
+  cursor: wait;
+}
+
+.music-volume {
+  width: 5rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.music-percent {
+  width: 4ch;
+  margin-inline-end: 0.15rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  white-space: nowrap;
+}
+
 .lang-switch {
   display: inline-flex;
   padding: 3px;
@@ -1538,23 +1601,6 @@ html:has(.view-play) #app::before {
 /* ---------- Responsive ---------- */
 
 @media (max-width: 860px) {
-  .hero,
-  .game-detail,
-  .dashboard {
-    grid-template-columns: 1fr;
-  }
-
-  .hero {
-    min-height: 0;
-  }
-
-  .hero-visual {
-    width: min(70%, 18rem);
-    order: -1;
-  }
-}
-
-@media (max-width: 680px) {
   .header-inner {
     flex-wrap: wrap;
     gap: 0.5rem 1rem;
@@ -1572,6 +1618,30 @@ html:has(.view-play) #app::before {
     justify-content: space-between;
   }
 
+  .hero,
+  .game-detail,
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    min-height: 0;
+  }
+
+  .hero-visual {
+    width: min(70%, 18rem);
+    order: -1;
+  }
+}
+
+@media (max-width: 680px) {
+
+  .header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+
   .brand-sub {
     display: none;
   }
@@ -1587,6 +1657,21 @@ html:has(.view-play) #app::before {
 
   .facts dd {
     margin-bottom: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-controls {
+    gap: 0.4rem;
+  }
+
+  .lang-option {
+    min-width: 2rem;
+    padding-inline: 0.4rem;
+  }
+
+  .music-volume {
+    width: 3rem;
   }
 }
 

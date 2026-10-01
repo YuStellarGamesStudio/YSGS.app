@@ -7,9 +7,9 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/copy-opm.mjs && vite",
     "typecheck": "tsc --noEmit",
-    "build": "vite build && node scripts/copy-pages-files.mjs && node scripts/write-sitemap.mjs && node scripts/write-sw.mjs",
+    "build": "node scripts/copy-opm.mjs && vite build && node scripts/copy-pages-files.mjs && node scripts/write-sitemap.mjs && node scripts/write-sw.mjs",
     "preview": "vite preview",
     "check": "npm run typecheck && npm audit --audit-level=high && npm run build"
   },

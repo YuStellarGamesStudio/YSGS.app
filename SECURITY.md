@@ -4,7 +4,7 @@
 **Domain:** ysgs.app  
 **Repository:** https://github.com/YuStellarGamesStudio/YSGS.app  
 **Policy status:** Initial policy; subject to ongoing review  
-**Last updated:** 2026-10-01
+**Last updated:** 2026-10-02
 
 ## 1. Purpose and Interpretation
 
@@ -22,7 +22,7 @@ Requirements apply when the relevant feature or infrastructure exists. Sections 
 
 ## 2. Current Baseline and Unverified Items
 
-The repository contains a Vite website written in native TypeScript, strict TypeScript configuration, an npm lockfile, and GitHub Actions definitions for CI and Pages deployment. The initial homepage does not implement accounts, backend endpoints, uploads, or user data storage. Domain and publishing-related marker files (`CNAME` and `.nojekyll`) are copied from the repository root into the `dist` build output.
+The repository contains a Vite website written in native TypeScript, strict TypeScript configuration, an npm lockfile, and GitHub Actions definitions for CI and Pages deployment. The website does not implement accounts, backend endpoints, uploads, or server-side user data storage. Language, theme, music-enabled and music-volume preferences are stored locally in the visitor's browser. Domain and publishing-related marker files (`CNAME` and `.nojekyll`) are copied from the repository root into the `dist` build output.
 
 The `CNAME` file records `ysgs.app`. This does not establish ownership of every associated service, prove that the site is deployed, or authorize scanning. The presence of `.nojekyll` does not prove the active hosting configuration.
 
@@ -221,6 +221,8 @@ On the same date, `https://ysgs.app/`, `https://www.ysgs.app/`, `https://data.ys
 - Minimize personal data collection and avoid putting sensitive values in URLs, client logs, analytics events, or publicly readable storage.
 - If data collection is introduced, document access, retention, deletion, and relevant disclosures. Do not invent legal compliance claims.
 - Do not assume browser storage is safe for secrets; code running in the same origin may be able to access it.
+
+Background music uses the official OPM.js 1.1.0 release already vendored with XYZ.js. The build copies its complete distribution and license to same-origin static assets, alongside the repository-authored JSON score; playback does not fetch a third-party music service or request microphone access. The music controller checks note ranges and timing, and official OPM validates the FM voices. Playback waits for user interaction, defaults to 5% volume, and suspends on game routes or hidden pages. Changes to the score, synthesizer release, worklet loading paths or browser-stored preferences must preserve these boundaries. Local Chromium checks observed real AudioWorklet output, live gain control, pause/resume and game-route suspension. Synthetic visibility/BFCache events and an accelerated score exercised lifecycle handlers and loop rollover; these do not certify native BFCache, background-tab behavior across browsers, or physical speaker audibility.
 
 ## 7. Dependencies and Supply-Chain Security
 

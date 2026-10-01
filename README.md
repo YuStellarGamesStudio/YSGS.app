@@ -22,6 +22,8 @@
 - 語系：預設英文，可切換繁體中文、日文；選擇會存於 `localStorage`。「開始遊玩」優先使用遊戲資料的 `launchUrls[目前語系]`，沒有時使用 `url`。
 - 風格：提供深色與淺色兩種風格；首次造訪依系統偏好，選擇會存於 `localStorage`。首頁採較緊湊的首屏，讓第一列遊戲封面提早露出；封面底部使用較淡的暗漸層，保留圖片細節。
 - 3D 背景：以 [XYZ.js](https://github.com/YueyuHoshizora/XYZ.js) v1.7 渲染全畫面 3D 場景（星空、全像格線地板、行星系統；資料頁以分類數量生成 3D 柱狀天際線），鏡頭隨路由移動、隨滑鼠輕微視差，並跟著深色／淺色切換。地板格線依頁面淡出：會看到行星系統的頁面在系統前方就淡出，避免格線穿過軌道與行星；資料頁保留遠處地板承托柱狀圖。行星系統是一顆帶日冕的藍白恆星，每款遊戲對應一顆行星：行星表面為程式產生的貼圖（岩質、雲層、海洋、氣體巨行星與行星環），只受恆星點光源照明而有晝夜相位，軌道接近共面，角速度依克卜勒第三定律隨半徑遞減。引擎依 WebGPU→WebGL2 選擇後端，以獨立 chunk 延遲載入；兩者皆不可用時保留 CSS 背景。為控制 GPU 負載，場景以 1× 解析度、不開 MSAA（保留 FXAA）、最高 24 fps 渲染；系統開啟「減少動態效果」或視窗失去焦點時場景保持靜止，只在切換頁面、主題或視窗大小後重繪；分頁切到背景或視窗最小化時完全停止渲染，回到前景後繼續。
+- 背景音樂：原創〈Stellar Drift／星際漂流／星の漂流〉以隨 XYZ.js 附帶的官方 OPM.js 1.1.0 合成；84 BPM、A 小調、16 小節（約 46 秒）循環，以暖低音、柔和 FM 雙音與稀疏鐘聲呼應星空、行星與全像格線。預設音量 **5%**，頁首提供播放／暫停與音量滑桿，偏好存於 `localStorage`。受瀏覽器自動播放限制，首次點擊或按鍵後才啟動；切換一般頁面、語系或主題不會重播，進入遊戲、隱藏分頁或暫存頁面時暫停，返回後續播。音訊獨立於 3D 渲染，只使用一個 AudioContext／AudioWorklet；需要 HTTPS 或 localhost，失敗時可手動重試，不影響網站操作。
+- 樂曲檔案：[`public/music/stellar-drift.json`](public/music/stellar-drift.json) 獨立保存三語曲名、`bpm`、`durationBeats` 與 `tracks`。每個 track 包含官方 OPM `voice`（四個 FM operators／ADSR）及明確的 `notes: [{ note, beat, length }]`；`note` 是 MIDI 音高，`beat` 與 `length` 都以拍為單位。修改編曲只需編輯 JSON；所有音符須在循環長度內，編曲含 release 尾音同時最多八音，避免 OPM 搶音。
 - 遊戲資料於瀏覽器執行時讀取 [GameCatalog](https://github.com/YuStellarGamesStudio/GameCatalog) 的 `allgames.json`、`games/<id>.json` 與 `categories.json`，只顯示 `status` 為 `published` 的遊戲；外部連結與封面只接受 HTTPS 網址。
 - PWA：提供 `manifest.webmanifest` 與圖示，可安裝成獨立視窗的 App。Service worker 只在正式產物註冊，預先快取網站殼層（HTML、JS、CSS、圖示）；頁面導覽走網路優先，離線時回傳快取的殼層；GameCatalog 的 JSON 走網路優先並保留最後一份成功回應，離線時仍能瀏覽遊戲庫與資料頁。遊戲本體與外部封面不在快取範圍，離線時無法遊玩。新版部署後，新的 worker 會在所有分頁關閉後才接手。
 
@@ -36,6 +38,7 @@
 | npm | 相依套件與 lockfile 管理 |
 | GitHub Actions | 型別檢查、相依套件稽核、建置與部署 |
 | XYZ.js 1.7.0 | 3D 背景渲染；未發佈於 npm，套件已解壓於 `vendor/xyz.js/`，以 `file:` 相依安裝 |
+| OPM.js 1.1.0 | 自託管 FM 背景音樂合成；使用 XYZ.js 內附的官方原始發佈檔，不新增 npm 相依套件 |
 | GitHub Pages | 靜態網站發布目標 |
 
 ## 環境需求
@@ -46,6 +49,8 @@
 - 使用 Git 取得專案。
 
 本專案不需要後端服務或自訂部署憑證。不要將私密金鑰或 Token 放入前端程式碼、環境變數產物或靜態檔案；發布後的前端資源可被下載。
+
+`npm run dev` 與 `npm run build` 會先由 `scripts/copy-opm.mjs` 將 `vendor/xyz.js/dist/vendor/opm/` 原樣複製到自動產生、已忽略的 `public/opm/`。不要直接修改該目錄；保留官方 ESM、chunks、AudioWorklet 與 LICENSE 的相對位置。正式建置會把 OPM 與樂曲 JSON 一起複製到 `dist`，並納入 service worker 殼層快取，無需外部音樂服務。
 
 ## 本機開發
 
@@ -110,8 +115,10 @@ public/
   manifest.webmanifest         # PWA 名稱、顏色、圖示與捷徑
   og-image.png                 # 1200×630 Open Graph 分享圖
   robots.txt                   # 允許所有爬蟲並指向 sitemap
+  music/stellar-drift.json     # 原創 OPM 三軌循環樂曲（音色、音符與拍數）
 scripts/
   copy-pages-files.mjs         # 將根目錄標記檔案複製到 dist
+  copy-opm.mjs                # 從官方 vendor 複製 OPM 到自動產生的 public/opm
   write-sitemap.mjs            # 建置時讀取 GameCatalog，產生 dist/sitemap.xml（首頁、遊戲庫、資料主控台與每款已發布遊戲的詳細頁；讀不到目錄時只列固定頁面）
   write-sw.mjs                 # 以 src/sw.js 為範本，寫入殼層檔案清單與內容雜湊，產生 dist/sw.js
 src/
@@ -120,6 +127,7 @@ src/
   catalog.ts                  # GameCatalog 資料讀取與驗證
   style.css                   # 網站樣式（深色／淺色風格）
   stage.ts                    # XYZ.js 3D 背景場景
+  music.ts                    # 獨立 OPM 音訊生命週期、音量與循環排程
   stage-textures.ts           # 行星、恆星、日冕與行星環的程式產生貼圖
   sw.js                       # Service worker 範本（不經 Vite 打包，由 write-sw.mjs 輸出）
   vite-env.d.ts               # Vite 與環境變數型別宣告

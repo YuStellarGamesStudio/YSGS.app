@@ -1,0 +1,124 @@
+{
+  "title": {
+    "en": "Stellar Drift",
+    "zh-TW": "星際漂流",
+    "ja": "星の漂流"
+  },
+  "bpm": 84,
+  "durationBeats": 64,
+  "tracks": [
+    {
+      "name": "warm-orbit-bass",
+      "voice": {
+        "version": 1,
+        "name": "warm-orbit-bass",
+        "algorithm": 4,
+        "feedback": 1,
+        "modIndex": 1.5,
+        "lfo": { "rate": 0, "amDepth": 0, "pmDepth": 0 },
+        "ops": [
+          { "ratio": 1, "level": 0.11, "detune": 0, "adsr": { "a": 0.06, "d": 0.35, "s": 0.5, "r": 0.2 } },
+          { "ratio": 1, "level": 0.42, "detune": 0, "adsr": { "a": 0.06, "d": 0.5, "s": 0.65, "r": 0.25 } },
+          { "ratio": 2, "level": 0.06, "detune": 0, "adsr": { "a": 0.08, "d": 0.3, "s": 0.3, "r": 0.2 } },
+          { "ratio": 1, "level": 0.12, "detune": 0, "adsr": { "a": 0.08, "d": 0.5, "s": 0.6, "r": 0.25 } }
+        ]
+      },
+      "notes": [
+        { "note": 45, "beat": 0, "length": 2.75 },
+        { "note": 45, "beat": 4, "length": 2.75 },
+        { "note": 41, "beat": 8, "length": 2.75 },
+        { "note": 41, "beat": 12, "length": 2.75 },
+        { "note": 48, "beat": 16, "length": 2.75 },
+        { "note": 48, "beat": 20, "length": 2.75 },
+        { "note": 43, "beat": 24, "length": 2.75 },
+        { "note": 43, "beat": 28, "length": 2.75 },
+        { "note": 38, "beat": 32, "length": 2.75 },
+        { "note": 38, "beat": 36, "length": 2.75 },
+        { "note": 41, "beat": 40, "length": 2.75 },
+        { "note": 41, "beat": 44, "length": 2.75 },
+        { "note": 40, "beat": 48, "length": 2.75 },
+        { "note": 40, "beat": 52, "length": 2.75 },
+        { "note": 40, "beat": 56, "length": 2.75 },
+        { "note": 40, "beat": 60, "length": 2.75 }
+      ]
+    },
+    {
+      "name": "holographic-dyads",
+      "voice": {
+        "version": 1,
+        "name": "holographic-dyads",
+        "algorithm": 4,
+        "feedback": 0,
+        "modIndex": 2,
+        "lfo": { "rate": 0.17, "amDepth": 0.06, "pmDepth": 2 },
+        "ops": [
+          { "ratio": 2, "level": 0.12, "detune": -4, "adsr": { "a": 0.75, "d": 1.2, "s": 0.6, "r": 0.65 } },
+          { "ratio": 1, "level": 0.24, "detune": -4, "adsr": { "a": 0.75, "d": 1.5, "s": 0.72, "r": 0.65 } },
+          { "ratio": 1, "level": 0.08, "detune": 4, "adsr": { "a": 0.85, "d": 1.2, "s": 0.55, "r": 0.65 } },
+          { "ratio": 1, "level": 0.21, "detune": 4, "adsr": { "a": 0.85, "d": 1.5, "s": 0.72, "r": 0.65 } }
+        ]
+      },
+      "notes": [
+        { "note": 60, "beat": 0, "length": 6.75 },
+        { "note": 64, "beat": 0, "length": 6.75 },
+        { "note": 57, "beat": 8, "length": 6.75 },
+        { "note": 64, "beat": 8, "length": 6.75 },
+        { "note": 64, "beat": 16, "length": 6.75 },
+        { "note": 67, "beat": 16, "length": 6.75 },
+        { "note": 59, "beat": 24, "length": 6.75 },
+        { "note": 62, "beat": 24, "length": 6.75 },
+        { "note": 65, "beat": 32, "length": 6.75 },
+        { "note": 69, "beat": 32, "length": 6.75 },
+        { "note": 64, "beat": 40, "length": 6.75 },
+        { "note": 69, "beat": 40, "length": 6.75 },
+        { "note": 60, "beat": 48, "length": 6.75 },
+        { "note": 67, "beat": 48, "length": 6.75 },
+        { "note": 59, "beat": 56, "length": 6.75 },
+        { "note": 64, "beat": 56, "length": 6.75 }
+      ]
+    },
+    {
+      "name": "distant-star-bells",
+      "voice": {
+        "version": 1,
+        "name": "distant-star-bells",
+        "algorithm": 4,
+        "feedback": 0,
+        "modIndex": 2.4,
+        "lfo": { "rate": 0, "amDepth": 0, "pmDepth": 0 },
+        "ops": [
+          { "ratio": 3.5, "level": 0.22, "detune": 0, "adsr": { "a": 0.008, "d": 0.65, "s": 0.02, "r": 0.65 } },
+          { "ratio": 1, "level": 0.26, "detune": 0, "adsr": { "a": 0.008, "d": 1, "s": 0.06, "r": 0.8 } },
+          { "ratio": 7, "level": 0.1, "detune": 2, "adsr": { "a": 0.01, "d": 0.45, "s": 0, "r": 0.55 } },
+          { "ratio": 2, "level": 0.1, "detune": 0, "adsr": { "a": 0.01, "d": 0.85, "s": 0.03, "r": 0.7 } }
+        ]
+      },
+      "notes": [
+        { "note": 76, "beat": 1, "length": 0.75 },
+        { "note": 71, "beat": 3.5, "length": 0.5 },
+        { "note": 72, "beat": 5, "length": 0.75 },
+        { "note": 69, "beat": 7, "length": 0.5 },
+        { "note": 76, "beat": 9.5, "length": 0.75 },
+        { "note": 72, "beat": 12, "length": 0.5 },
+        { "note": 69, "beat": 14.5, "length": 0.75 },
+        { "note": 79, "beat": 17, "length": 0.75 },
+        { "note": 76, "beat": 19.5, "length": 0.5 },
+        { "note": 74, "beat": 22, "length": 0.75 },
+        { "note": 74, "beat": 25, "length": 0.75 },
+        { "note": 71, "beat": 27.5, "length": 0.5 },
+        { "note": 69, "beat": 30, "length": 0.75 },
+        { "note": 81, "beat": 33, "length": 0.75 },
+        { "note": 76, "beat": 35, "length": 0.5 },
+        { "note": 77, "beat": 37.5, "length": 0.75 },
+        { "note": 76, "beat": 41, "length": 0.75 },
+        { "note": 81, "beat": 43.5, "length": 0.5 },
+        { "note": 79, "beat": 46, "length": 0.75 },
+        { "note": 79, "beat": 49, "length": 0.75 },
+        { "note": 76, "beat": 51.5, "length": 0.5 },
+        { "note": 72, "beat": 54, "length": 0.75 },
+        { "note": 74, "beat": 57, "length": 0.75 },
+        { "note": 71, "beat": 60.5, "length": 0.75 }
+      ]
+    }
+  ]
+}

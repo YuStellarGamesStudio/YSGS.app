@@ -1,6 +1,7 @@
 import './style.css';
 import { gameText, loadCatalog, type Catalog, type Game } from './catalog';
 import { defaultLocale, isLocale, localeMeta, locales, messages, type Locale, type Messages } from './i18n';
+import { MusicController } from './music';
 import type { Stage, StageState } from './stage';
 
 type Theme = 'dark' | 'light';
@@ -8,6 +9,8 @@ type Route = { view: 'home' } | { view: 'games'; genre: string | null } | { view
 
 const LOCALE_KEY = 'ysgs-locale';
 const THEME_KEY = 'ysgs-theme';
+const MUSIC_ENABLED_KEY = 'ysgs-music-enabled';
+const MUSIC_VOLUME_KEY = 'ysgs-music-volume';
 const CATALOG_BASE = new URL(import.meta.env.VITE_CATALOG_BASE_URL ?? 'https://data.ysgs.app/');
 const SOURCE_URL = 'https://github.com/YuStellarGamesStudio/YSGS.app';
 const DATA_REPO_URL = 'https://github.com/YuStellarGamesStudio/GameCatalog';
@@ -30,6 +33,9 @@ function writeStorage(key: string, value: string): void {
 }
 
 const storedLocale = readStorage(LOCALE_KEY);
+const storedMusicVolume = readStorage(MUSIC_VOLUME_KEY);
+const parsedMusicVolume = storedMusicVolume?.trim() ? Number(storedMusicVolume) : NaN;
+const musicVolume = Number.isFinite(parsedMusicVolume) && parsedMusicVolume >= 0 && parsedMusicVolume <= 1 ? parsedMusicVolume : 0.05;
 const state = {
   locale: isLocale(storedLocale) ? storedLocale : defaultLocale,
   theme: (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark') as Theme,
@@ -65,6 +71,8 @@ const ICONS = {
   sun: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>',
   moon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1Z"/></svg>',
   play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="fill" d="M7 4.5v15l12-7.5Z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>',
+  retry: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M20 12a8 8 0 1 0-2.3 5.7"/></svg>',
   arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
   logo: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="logo-hex" d="M24 3 42 13.5v21L24 45 6 34.5v-21Z"/><path class="logo-star" d="m24 13 2.9 8.1L35 24l-8.1 2.9L24 35l-2.9-8.1L13 24l8.1-2.9Z"/></svg>',
@@ -140,7 +148,12 @@ const languageButtons = locales.map((locale) =>
 );
 const languageGroup = h('div', { class: 'lang-switch', role: 'group' }, ...languageButtons);
 const themeButton = h('button', { type: 'button', class: 'theme-toggle' });
-const header = h('header', { class: 'site-header' }, h('div', { class: 'header-inner' }, brand, nav, h('div', { class: 'header-controls' }, languageGroup, themeButton)));
+const musicToggle = h('button', { type: 'button', class: 'music-toggle', 'aria-describedby': 'music-status' });
+const musicSlider = h('input', { id: 'music-volume', type: 'range', class: 'music-volume', min: 0, max: 100, step: 1 });
+const musicPercent = h('output', { class: 'music-percent', for: 'music-volume', 'aria-live': 'off' });
+const musicStatus = h('span', { id: 'music-status', class: 'visually-hidden', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' });
+const musicControls = h('div', { class: 'music-controls', role: 'group' }, musicToggle, musicSlider, musicPercent, musicStatus);
+const header = h('header', { class: 'site-header' }, h('div', { class: 'header-inner' }, brand, nav, h('div', { class: 'header-controls' }, musicControls, languageGroup, themeButton)));
 const main = h('main', { id: 'main', class: 'site-main', tabindex: -1 });
 const footerSource = h('a', { href: SOURCE_URL, rel: 'noopener noreferrer', target: '_blank' });
 const footerData = h('a', { href: DATA_REPO_URL, rel: 'noopener noreferrer', target: '_blank' });
@@ -153,6 +166,48 @@ let stage: Stage | null = null;
 let gameLoaded = false;
 
 app.replaceChildren(stageCanvas, skipLink, header, main, footer);
+
+let pageSuspended = false;
+let musicGestureUsed = false;
+const music = new MusicController(updateMusicControls, musicVolume, readStorage(MUSIC_ENABLED_KEY) !== 'false');
+
+function updateMusicControls(): void {
+  const status = music.status;
+  const action = status === 'error' ? t.musicRetry : music.enabled ? t.musicPause : t.musicPlay;
+  const notice = {
+    waiting: t.musicWaiting,
+    loading: t.musicLoading,
+    playing: t.musicPlaying,
+    paused: t.musicPaused,
+    blocked: t.musicBlocked,
+    error: t.musicError,
+  }[status];
+  const percent = new Intl.NumberFormat(localeMeta[state.locale].htmlLang, { style: 'percent', maximumFractionDigits: 0 }).format(music.volume);
+  musicControls.setAttribute('aria-label', t.musicLabel);
+  musicToggle.replaceChildren(icon(status === 'error' ? 'retry' : music.enabled ? 'pause' : 'play'));
+  musicToggle.setAttribute('aria-label', action);
+  musicToggle.setAttribute('aria-pressed', String(music.enabled));
+  musicToggle.setAttribute('aria-busy', String(status === 'loading'));
+  musicToggle.dataset.state = status;
+  musicToggle.disabled = status === 'loading';
+  musicToggle.title = `${action} · ${t.musicTrack} — ${notice}`;
+  musicSlider.setAttribute('aria-label', t.musicVolume);
+  musicSlider.setAttribute('aria-valuetext', percent);
+  musicSlider.value = String(Math.round(music.volume * 100));
+  musicPercent.textContent = percent;
+  musicStatus.textContent = `${t.musicTrack} — ${notice}`;
+}
+
+function updateMusicBlocking(route = parseRoute()): void {
+  music.setBlocked(pageSuspended || document.hidden || route.view === 'play');
+}
+
+function activateMusicFromGesture(event: Event): void {
+  if (!event.isTrusted || musicGestureUsed || !music.enabled || pageSuspended || document.hidden || parseRoute().view === 'play') return;
+  if (event.target instanceof Node && musicControls.contains(event.target)) return;
+  musicGestureUsed = true;
+  void music.activate();
+}
 
 function stageState(route: Route): StageState {
   const catalog = state.catalog;
@@ -236,6 +291,8 @@ function updateChrome(route: Route): void {
   footerData.textContent = t.footerData;
   footerCopy.textContent = `© ${new Date().getFullYear()} YuStellarGamesStudio`;
   stage?.update(stageState(route));
+  updateMusicBlocking(route);
+  updateMusicControls();
 }
 
 // ---------- Shared pieces ----------
@@ -728,6 +785,17 @@ languageGroup.addEventListener('click', (event) => {
   if (isLocale(locale)) setLocale(locale);
 });
 themeButton.addEventListener('click', () => setTheme(state.theme === 'dark' ? 'light' : 'dark'));
+musicToggle.addEventListener('click', () => {
+  const enabled = music.status === 'error' || !music.enabled;
+  writeStorage(MUSIC_ENABLED_KEY, String(enabled));
+  if (enabled) musicGestureUsed = true;
+  void music.setEnabled(enabled);
+});
+musicSlider.addEventListener('input', () => {
+  const volume = Number(musicSlider.value) / 100;
+  writeStorage(MUSIC_VOLUME_KEY, String(volume));
+  music.setVolume(volume);
+});
 skipLink.addEventListener('click', (event) => {
   // Following #main would add a hash entry to the history; just move focus.
   event.preventDefault();
@@ -744,6 +812,9 @@ document.addEventListener('click', (event) => {
   event.preventDefault();
   if (url.href !== location.href) navigate(url.href);
 });
+// Route clicks are handled first, so entering a game never starts its background music.
+document.addEventListener('click', activateMusicFromGesture);
+document.addEventListener('keydown', activateMusicFromGesture);
 window.addEventListener('popstate', () => render(true));
 window.addEventListener('keydown', (event) => {
   // Only reaches us while focus is outside the game frame, e.g. on the exit button.
@@ -758,7 +829,19 @@ window.addEventListener('keydown', (event) => {
 });
 reducedMotion.addEventListener('change', () => stage?.update(stageState(parseRoute())));
 // rAF timing in background tabs is up to the browser; pausing ends the frame loop explicitly.
-document.addEventListener('visibilitychange', () => stage?.update(stageState(parseRoute())));
+document.addEventListener('visibilitychange', () => {
+  stage?.update(stageState(parseRoute()));
+  updateMusicBlocking();
+});
+window.addEventListener('pagehide', (event) => {
+  pageSuspended = true;
+  music.setBlocked(true);
+  if (!event.persisted) void music.destroy();
+});
+window.addEventListener('pageshow', () => {
+  pageSuspended = false;
+  updateMusicBlocking();
+});
 window.addEventListener('focus', () => stage?.update(stageState(parseRoute())));
 window.addEventListener('blur', () => stage?.update(stageState(parseRoute())));
 window.addEventListener('pointermove', (event) => {
