@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "build": "vite build && node scripts/copy-pages-files.mjs && node scripts/write-sitemap.mjs",
+    "build": "vite build && node scripts/copy-pages-files.mjs && node scripts/write-sitemap.mjs && node scripts/write-sw.mjs",
     "preview": "vite preview",
     "check": "npm run typecheck && npm audit --audit-level=high && npm run build"
   },

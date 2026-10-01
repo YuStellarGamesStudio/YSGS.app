@@ -23,6 +23,7 @@
 - 風格：提供深色與淺色兩種風格；首次造訪依系統偏好，選擇會存於 `localStorage`。
 - 3D 背景：以 [XYZ.js](https://github.com/YueyuHoshizora/XYZ.js) v1.7 渲染全畫面 3D 場景（星空、全像格線地板、行星系統；資料頁以分類數量生成 3D 柱狀天際線），鏡頭隨路由移動、隨滑鼠輕微視差，並跟著深色／淺色切換。行星系統是一顆帶日冕的藍白恆星，每款遊戲對應一顆行星：行星表面為程式產生的貼圖（岩質、雲層、海洋、氣體巨行星與行星環），只受恆星點光源照明而有晝夜相位，軌道接近共面，角速度依克卜勒第三定律隨半徑遞減。引擎依 WebGPU→WebGL2 選擇後端，以獨立 chunk 延遲載入；兩者皆不可用時保留 CSS 背景。為控制 GPU 負載，場景以 1× 解析度、不開 MSAA（保留 FXAA）、最高 24 fps 渲染；系統開啟「減少動態效果」時場景保持靜止，只在切換頁面、主題或視窗大小後重繪。
 - 遊戲資料於瀏覽器執行時讀取 [GameCatalog](https://github.com/YuStellarGamesStudio/GameCatalog) 的 `allgames.json`、`games/<id>.json` 與 `categories.json`，只顯示 `status` 為 `published` 的遊戲；外部連結與封面只接受 HTTPS 網址。
+- PWA：提供 `manifest.webmanifest` 與圖示，可安裝成獨立視窗的 App。Service worker 只在正式產物註冊，預先快取網站殼層（HTML、JS、CSS、圖示）；頁面導覽走網路優先，離線時回傳快取的殼層；GameCatalog 的 JSON 走網路優先並保留最後一份成功回應，離線時仍能瀏覽遊戲庫與資料頁。遊戲本體與外部封面不在快取範圍，離線時無法遊玩。新版部署後，新的 worker 會在所有分頁關閉後才接手。
 
 尚未加入帳號、後端 API 或資料儲存功能。部署流程已定義於倉庫；是否已上線，仍須以 GitHub Actions 執行結果與實際網站為準。
 
@@ -74,7 +75,7 @@ VITE_CATALOG_BASE_URL=http://127.0.0.1:8787/ npm run dev
 | `npm run dev` | 啟動本機開發伺服器 |
 | `npm run typecheck` | 執行 TypeScript 型別檢查，不輸出 JavaScript |
 | `npm audit --audit-level=high` | 稽核相依套件；高風險或嚴重弱點會讓指令失敗 |
-| `npm run build` | 建立正式產物，並複製 Pages 標記檔案 |
+| `npm run build` | 建立正式產物，複製 Pages 標記檔案，產生 sitemap 與 service worker |
 | `npm run preview` | 在本機預覽既有的正式產物 |
 | `npm run check` | 依序執行型別檢查、相依套件稽核及正式建置 |
 
@@ -101,11 +102,17 @@ design/
   favicon.svg                  # 網站圖示原始檔（修改後重新輸出成 public/favicon.ico）
 public/
   favicon.ico                  # 16／32／48 px 網站圖示
+  icon.svg                     # App 圖示原始檔，也直接作為 SVG 圖示（修改後重新輸出下列 PNG）
+  icon-192.png、icon-512.png   # PWA 圖示
+  icon-maskable-512.png        # Android 可裁切圖示（圖形縮在安全區內）
+  apple-touch-icon.png         # 180 px iOS 主畫面圖示
+  manifest.webmanifest         # PWA 名稱、顏色、圖示與捷徑
   og-image.png                 # 1200×630 Open Graph 分享圖
   robots.txt                   # 允許所有爬蟲並指向 sitemap
 scripts/
   copy-pages-files.mjs         # 將根目錄標記檔案複製到 dist
   write-sitemap.mjs            # 建置時讀取 GameCatalog，產生 dist/sitemap.xml（首頁、遊戲庫、資料主控台與每款已發布遊戲的詳細頁；讀不到目錄時只列固定頁面）
+  write-sw.mjs                 # 以 src/sw.js 為範本，寫入殼層檔案清單與內容雜湊，產生 dist/sw.js
 src/
   main.ts                     # 應用程式殼層、路由與各頁面
   i18n.ts                     # 英文、繁體中文、日文介面文字
@@ -113,6 +120,7 @@ src/
   style.css                   # 網站樣式（深色／淺色風格）
   stage.ts                    # XYZ.js 3D 背景場景
   stage-textures.ts           # 行星、恆星、日冕與行星環的程式產生貼圖
+  sw.js                       # Service worker 範本（不經 Vite 打包，由 write-sw.mjs 輸出）
   vite-env.d.ts               # Vite 與環境變數型別宣告
 index.html                    # 網頁入口
 package.json                  # 相依套件與 npm 指令

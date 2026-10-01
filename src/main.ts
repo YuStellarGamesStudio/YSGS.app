@@ -738,3 +738,8 @@ void import('./stage')
     console.warn('3D stage failed to load:', error);
     stageCanvas.remove();
   });
+
+// Production only: on the dev server a worker would serve stale modules past HMR.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register(`${BASE}sw.js?catalog=${encodeURIComponent(CATALOG_BASE.href)}`).catch((error: unknown) => console.warn('Service worker registration failed:', error));
+}

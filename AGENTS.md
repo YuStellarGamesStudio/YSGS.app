@@ -22,5 +22,5 @@
 - Deploy only `dist`. The build copies the root `CNAME` and `.nojekyll` files into `dist`; keep the root files as the single source of truth.
 - Pull requests to `main` run `.github/workflows/ci.yml`. Pushes to `main` run `.github/workflows/pages.yml`, which reuses CI and deploys its successful artifact.
 - Before enabling deployment, select **GitHub Actions** under repository **Settings → Pages → Build and deployment → Source**, configure the custom domain as `ysgs.app`, and verify DNS and HTTPS. A copied `CNAME` alone does not configure the custom domain for an Actions deployment.
-- The Vite default base path `/` targets the custom domain. If hosting under a repository subpath instead, update the build base path before deployment.
+- The Vite default base path `/` targets the custom domain. If hosting under a repository subpath instead, update the build base path before deployment, along with the root-relative paths in `public/manifest.webmanifest`, `src/sw.js`, and `scripts/write-sw.mjs`.
 - Keep deployment permissions isolated from build and pull-request jobs, and maintain reviewed commit pins for GitHub Actions.
