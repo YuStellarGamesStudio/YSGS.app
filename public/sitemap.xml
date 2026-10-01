@@ -3,4 +3,10 @@
   <url>
     <loc>https://ysgs.app/</loc>
   </url>
+  <url>
+    <loc>https://ysgs.app/?view=games</loc>
+  </url>
+  <url>
+    <loc>https://ysgs.app/?view=data</loc>
+  </url>
 </urlset>

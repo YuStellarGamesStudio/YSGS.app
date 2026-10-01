@@ -91,15 +91,29 @@ function categoryName(key: string): string {
 
 // ---------- Routing ----------
 
+// Routes live in the query string so every view is a real, server-resolvable URL
+// (GitHub Pages serves index.html for any query on the root):
+// `/`, `?view=games`, `?view=games&id=<id>`, `?view=data`, `?play=<id>`.
+const BASE = import.meta.env.BASE_URL;
+const HREF = { home: BASE, games: `${BASE}?view=games`, data: `${BASE}?view=data` } as const;
+
+function gameHref(id: string): string {
+  return `${HREF.games}&id=${encodeURIComponent(id)}`;
+}
+
+function playHref(id: string): string {
+  return `${BASE}?play=${encodeURIComponent(id)}`;
+}
+
 function parseRoute(): Route {
-  // Playing lives in the query (`?play=<id>`), every other view in the hash.
-  const play = new URLSearchParams(location.search).get('play');
+  const params = new URLSearchParams(location.search);
+  const play = params.get('play');
   if (play) return { view: 'play', id: play };
-  const [section = '', id, extra] = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
-  if (extra !== undefined) return { view: 'missing' };
-  if (section === '' && id === undefined) return { view: 'home' };
-  if (section === 'games') return id ? { view: 'game', id } : { view: 'games' };
-  if (section === 'data' && id === undefined) return { view: 'data' };
+  const view = params.get('view');
+  const id = params.get('id');
+  if (view === null) return id === null ? { view: 'home' } : { view: 'missing' };
+  if (view === 'games') return id ? { view: 'game', id } : { view: 'games' };
+  if (view === 'data' && id === null) return { view: 'data' };
   return { view: 'missing' };
 }
 
@@ -110,11 +124,11 @@ if (!app) throw new Error('Missing #app root');
 
 const skipLink = h('a', { class: 'skip-link', href: '#main' });
 const brandName = h('span', { class: 'brand-name' });
-const brand = h('a', { class: 'brand', href: '#/' }, icon('logo', 'brand-logo'), h('span', { class: 'brand-text' }, brandName, h('span', { class: 'brand-sub' }, 'YuStellarGamesStudio')));
+const brand = h('a', { class: 'brand', href: HREF.home }, icon('logo', 'brand-logo'), h('span', { class: 'brand-text' }, brandName, h('span', { class: 'brand-sub' }, 'YuStellarGamesStudio')));
 const navLinks = {
-  home: h('a', { href: '#/' }),
-  games: h('a', { href: '#/games' }),
-  data: h('a', { href: '#/data' }),
+  home: h('a', { href: HREF.home }),
+  games: h('a', { href: HREF.games }),
+  data: h('a', { href: HREF.data }),
 };
 const nav = h('nav', { class: 'site-nav' }, navLinks.home, navLinks.games, navLinks.data);
 const languageButtons = locales.map((locale) =>
@@ -208,23 +222,18 @@ function coverImage(game: Game, className: string): HTMLElement {
   return frame;
 }
 
-/** Detail-page URL without any query, so it also leaves the `?play=` view. */
-function gameHref(id: string): string {
-  return `${location.pathname}#/games/${encodeURIComponent(id)}`;
-}
-
 function navigate(href: string): void {
   history.pushState(null, '', href);
   render(true);
 }
 
 function playButton(game: Game): HTMLAnchorElement {
-  return h('a', { href: `?play=${encodeURIComponent(game.id)}`, class: 'btn btn-primary' }, icon('play'), t.play);
+  return h('a', { href: playHref(game.id), class: 'btn btn-primary' }, icon('play'), t.play);
 }
 
 function gameCard(game: Game): HTMLElement {
   const text = gameText(game, state.locale);
-  const detail = `#/games/${encodeURIComponent(game.id)}`;
+  const detail = gameHref(game.id);
   return h(
     'article',
     { class: 'game-card' },
@@ -294,7 +303,7 @@ function renderHome(catalog: Catalog | null): Node[] {
       h('p', { class: 'kicker' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), t.heroKicker),
       h('h1', { tabindex: -1 }, t.heroTitle),
       h('p', { class: 'lead' }, t.heroLead),
-      h('div', { class: 'hero-actions' }, h('a', { href: '#/games', class: 'btn btn-primary' }, t.ctaGames, icon('arrow')), h('a', { href: '#/data', class: 'btn btn-ghost' }, t.ctaData)),
+      h('div', { class: 'hero-actions' }, h('a', { href: HREF.games, class: 'btn btn-primary' }, t.ctaGames, icon('arrow')), h('a', { href: HREF.data, class: 'btn btn-ghost' }, t.ctaData)),
     ),
     h('div', { class: 'hero-visual', 'aria-hidden': 'true' }, h('div', { class: 'orbit orbit-1' }), h('div', { class: 'orbit orbit-2' }), h('div', { class: 'orbit orbit-3' }), icon('logo', 'hero-core')),
   );
@@ -305,7 +314,7 @@ function renderHome(catalog: Catalog | null): Node[] {
   const library = h(
     'section',
     { class: 'section' },
-    h('div', { class: 'section-head' }, h('h2', {}, t.libraryTitle), h('a', { href: '#/games', class: 'text-link' }, t.viewAll, icon('arrow'))),
+    h('div', { class: 'section-head' }, h('h2', {}, t.libraryTitle), h('a', { href: HREF.games, class: 'text-link' }, t.viewAll, icon('arrow'))),
     h('div', { class: 'game-grid' }, ...featured.map(gameCard)),
   );
   return [hero, stats, library];
@@ -350,7 +359,7 @@ function renderGames(catalog: Catalog | null): Node[] {
 }
 
 function renderGame(catalog: Catalog | null, id: string): Node[] {
-  const back = h('a', { href: '#/games', class: 'text-link back-link' }, icon('back'), t.back);
+  const back = h('a', { href: HREF.games, class: 'text-link back-link' }, icon('back'), t.back);
   if (!catalog) return [back, statusPanel()];
   const game = catalog.games.find((candidate) => candidate.id === id);
   if (!game) return [back, h('div', { class: 'status-panel is-error' }, h('h1', { tabindex: -1 }, t.gameNotFound))];
@@ -564,7 +573,7 @@ function panel(title: string, span: string, ...children: Child[]): HTMLElement {
 }
 
 function renderMissing(): Node[] {
-  return [h('div', { class: 'status-panel is-error' }, h('h1', { tabindex: -1 }, t.notFound), h('a', { href: '#/', class: 'btn btn-primary' }, t.goHome))];
+  return [h('div', { class: 'status-panel is-error' }, h('h1', { tabindex: -1 }, t.notFound), h('a', { href: HREF.home, class: 'btn btn-primary' }, t.goHome))];
 }
 
 // ---------- Render loop ----------
@@ -632,22 +641,21 @@ languageGroup.addEventListener('click', (event) => {
 });
 themeButton.addEventListener('click', () => setTheme(state.theme === 'dark' ? 'light' : 'dark'));
 skipLink.addEventListener('click', (event) => {
-  // A real #main navigation would replace the hash route.
+  // Following #main would add a hash entry to the history; just move focus.
   event.preventDefault();
   main.focus();
 });
-// Links that only change the query (entering or leaving `?play=`) are handled in-page
-// with the History API instead of reloading the document.
+// In-app links only change the query, so they are handled with the History API
+// instead of reloading the document.
 document.addEventListener('click', (event) => {
   if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   const link = (event.target as Element).closest<HTMLAnchorElement>('a[href]');
   if (!link || link.target) return;
   const url = new URL(link.href);
-  if (url.origin !== location.origin || url.pathname !== location.pathname || url.search === location.search) return;
+  if (url.origin !== location.origin || url.pathname !== location.pathname) return;
   event.preventDefault();
-  navigate(url.href);
+  if (url.href !== location.href) navigate(url.href);
 });
-// Fires for hash links and programmatic hash changes as well as Back/Forward.
 window.addEventListener('popstate', () => render(true));
 window.addEventListener('keydown', (event) => {
   // Only reaches us while focus is outside the game frame, e.g. on the exit button.
