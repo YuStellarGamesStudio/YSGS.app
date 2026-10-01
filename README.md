@@ -7,9 +7,20 @@
 
 本網站設計為原生支援**英文、繁體中文、日文**三語語系，以**英文為主要（預設）語系**；新增或修改網站內容時，應同步維護三種語言。切換語系須在前端即時完成，不得重新整理頁面或整頁導覽，並同步更新 `<html lang>`。
 
-目前首頁仍僅實作繁體中文（`lang="zh-Hant"`），尚未提供英文、日文內容與語系切換功能。
+網站為單頁應用程式（hash 路由），所有頁面與語系、風格切換皆在前端完成，不會重新載入頁面：
 
-目前提供簡潔的首頁、網站原始碼連結及自動更新的年份，尚未加入帳號、後端 API 或資料儲存功能。部署流程已定義於倉庫；是否已上線，仍須以 GitHub Actions 執行結果與實際網站為準。
+| 路由 | 內容 |
+| --- | --- |
+| `#/` | 首頁：主視覺、統計數據與精選遊戲 |
+| `#/games` | 遊戲庫：關鍵字搜尋（名稱、分類、標籤，跨三語）與分類篩選 |
+| `#/games/<id>` | 遊戲詳細頁：封面、介紹、分類、標籤、可用啟動語言與資料紀錄連結 |
+| `#/data` | 資料主控台：統計、分類分布圖、在地化矩陣、標籤雲、分類字典與實際請求的網路紀錄 |
+
+- 語系：預設英文，可切換繁體中文、日文；選擇會存於 `localStorage`。「開始遊玩」優先使用遊戲資料的 `launchUrls[目前語系]`，沒有時使用 `url`。
+- 風格：提供深色與淺色兩種風格；首次造訪依系統偏好，選擇會存於 `localStorage`。
+- 遊戲資料於瀏覽器執行時讀取 [GameCatalog](https://github.com/YuStellarGamesStudio/GameCatalog) 的 `allgames.json`、`games/<id>.json` 與 `categories.json`，只顯示 `status` 為 `published` 的遊戲；外部連結與封面只接受 HTTPS 網址。
+
+尚未加入帳號、後端 API 或資料儲存功能。部署流程已定義於倉庫；是否已上線，仍須以 GitHub Actions 執行結果與實際網站為準。
 
 ## 技術組成
 
@@ -39,6 +50,14 @@ npm run dev
 ```
 
 開啟終端機顯示的本機網址。Vite 預設使用 `http://localhost:5173`；若連接埠已被占用，請以實際輸出為準。
+
+遊戲資料來源預設為 `https://data.ysgs.app/`。若要使用本機的 GameCatalog 資料，可設定 `VITE_CATALOG_BASE_URL`（結尾須有 `/`），並以允許跨來源請求（`Access-Control-Allow-Origin`）的靜態伺服器提供資料：
+
+```sh
+VITE_CATALOG_BASE_URL=http://127.0.0.1:8787/ npm run dev
+```
+
+此值會在建置時寫入前端程式碼，只能放公開網址，不可放任何憑證。
 
 一般安裝請使用 `npm ci`，依照 `package-lock.json` 安裝鎖定版本。新增或更新相依套件時，應一併檢視並提交 `package.json` 與 `package-lock.json`。
 
@@ -74,9 +93,11 @@ npm run preview
 scripts/
   copy-pages-files.mjs         # 將根目錄標記檔案複製到 dist
 src/
-  main.ts                     # TypeScript 入口
-  style.css                   # 網站樣式
-  vite-env.d.ts               # Vite 型別宣告
+  main.ts                     # 應用程式殼層、路由與各頁面
+  i18n.ts                     # 英文、繁體中文、日文介面文字
+  catalog.ts                  # GameCatalog 資料讀取與驗證
+  style.css                   # 網站樣式（深色／淺色風格）
+  vite-env.d.ts               # Vite 與環境變數型別宣告
 index.html                    # 網頁入口
 package.json                  # 相依套件與 npm 指令
 package-lock.json             # 鎖定相依套件版本

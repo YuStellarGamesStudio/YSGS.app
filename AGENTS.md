@@ -4,6 +4,8 @@
 - 網域：ysgs.app
 - 語系：網站原生支援英文、繁體中文、日文三語，以英文為主要（預設）語系；新增或修改內容與介面時，須同步提供三語版本。
 - 語系切換：須在前端即時切換，不得重新整理頁面或整頁導覽，並同步更新 `<html lang>`。
+- 介面文字集中於 `src/i18n.ts`，三語必須有相同鍵值（由 `Messages` 型別檢查）；遊戲資料來自 GameCatalog（預設 `https://data.ysgs.app/`，可用 `VITE_CATALOG_BASE_URL` 覆寫），屬外部輸入，須以 `textContent` 顯示且外部連結限 HTTPS。
+- 風格：提供深色與淺色兩種風格，色彩一律使用 `src/style.css` 中各風格的 CSS 變數。
 
 # Security Policy Maintenance
 
