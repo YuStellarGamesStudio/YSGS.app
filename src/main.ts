@@ -335,7 +335,8 @@ function renderHome(catalog: Catalog | null): Node[] {
       'div',
       { class: 'hero-copy' },
       h('p', { class: 'kicker' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), t.heroKicker),
-      h('h1', { tabindex: -1 }, t.heroTitle),
+      // CJK lines may break between any two characters; keep each word whole so the title never splits 遊戲.
+      h('h1', { tabindex: -1 }, ...Array.from(new Intl.Segmenter(state.locale, { granularity: 'word' }).segment(t.heroTitle), (part) => (part.isWordLike ? h('span', { class: 'nowrap' }, part.segment) : part.segment))),
       h('p', { class: 'lead' }, t.heroLead),
       h('div', { class: 'hero-actions' }, h('a', { href: HREF.games, class: 'btn btn-primary' }, t.ctaGames, icon('arrow')), h('a', { href: HREF.data, class: 'btn btn-ghost' }, t.ctaData)),
     ),

@@ -74,14 +74,14 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
-/* Subtle CRT scanlines in dark mode only. */
+/* Subtle CRT scanlines in dark mode only, kept behind content so covers stay crisp. */
 :root[data-theme='dark'] body::after {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.018) 0 1px, transparent 1px 3px);
-  z-index: 100;
+  background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.012) 0 1px, transparent 1px 3px);
+  z-index: -1;
 }
 
 #app {
@@ -530,15 +530,20 @@ input {
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   align-items: center;
   gap: 2rem;
-  min-height: min(68svh, 36rem);
+  min-height: min(52svh, 28rem);
 }
 
 .hero h1 {
-  font-size: clamp(2.4rem, 6.5vw, 4.6rem);
+  font-size: clamp(2.4rem, 5.6vw, 4.2rem);
+  text-wrap: balance;
   background: linear-gradient(100deg, var(--text) 30%, var(--accent) 70%, var(--accent-2));
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 .hero-actions {
@@ -573,6 +578,10 @@ input {
   justify-self: center;
   display: grid;
   place-items: center;
+  /* Rotating orbit boxes' corners poke past the column edge and would add a
+     horizontal scrollbar; the margin keeps the orbit dots unclipped. */
+  overflow-x: clip;
+  overflow-clip-margin: 8px;
 }
 
 .orbit {
@@ -645,7 +654,7 @@ input {
   position: relative;
   display: grid;
   gap: 0.2rem;
-  padding: 1.2rem 1.3rem;
+  padding: 0.85rem 1.2rem;
   background: var(--surface);
   border: 1px solid var(--line);
   clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
@@ -667,7 +676,7 @@ input {
 
 .stat-value {
   font-family: var(--font-mono);
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
