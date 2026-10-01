@@ -4,7 +4,7 @@ import { defaultLocale, isLocale, localeMeta, locales, messages, type Locale, ty
 import type { Stage, StageState } from './stage';
 
 type Theme = 'dark' | 'light';
-type Route = { view: 'home' } | { view: 'games' } | { view: 'game'; id: string } | { view: 'play'; id: string } | { view: 'data' } | { view: 'missing' };
+type Route = { view: 'home' } | { view: 'games'; genre: string | null } | { view: 'game'; id: string } | { view: 'play'; id: string } | { view: 'data' } | { view: 'missing' };
 
 const LOCALE_KEY = 'ysgs-locale';
 const THEME_KEY = 'ysgs-theme';
@@ -93,12 +93,16 @@ function categoryName(key: string): string {
 
 // Routes live in the query string so every view is a real, server-resolvable URL
 // (GitHub Pages serves index.html for any query on the root):
-// `/`, `?view=games`, `?view=games&id=<id>`, `?view=data`, `?play=<id>`.
+// `/`, `?view=games`, `?view=games&genre=<category>`, `?view=games&id=<id>`, `?view=data`, `?play=<id>`.
 const BASE = import.meta.env.BASE_URL;
 const HREF = { home: BASE, games: `${BASE}?view=games`, data: `${BASE}?view=data` } as const;
 
 function gameHref(id: string): string {
   return `${HREF.games}&id=${encodeURIComponent(id)}`;
+}
+
+function genreHref(key: string): string {
+  return key ? `${HREF.games}&genre=${encodeURIComponent(key)}` : HREF.games;
 }
 
 function playHref(id: string): string {
@@ -112,7 +116,7 @@ function parseRoute(): Route {
   const view = params.get('view');
   const id = params.get('id');
   if (view === null) return id === null ? { view: 'home' } : { view: 'missing' };
-  if (view === 'games') return id ? { view: 'game', id } : { view: 'games' };
+  if (view === 'games') return id ? { view: 'game', id } : { view: 'games', genre: params.get('genre') };
   if (view === 'data' && id === null) return { view: 'data' };
   return { view: 'missing' };
 }
@@ -176,7 +180,11 @@ function pageMeta(route: Route): { title: string; description: string; href: str
     const text = gameText(game, state.locale);
     return { title: `${text.name} — ${brand}`, description: text.description, href, index: true };
   }
-  if (route.view === 'games') return { title: `${t.libraryTitle} — ${brand}`, description: t.metaDescription, href: HREF.games, index: true };
+  if (route.view === 'games') {
+    const genre = route.genre && state.catalog?.categories.has(route.genre) ? route.genre : '';
+    const title = genre ? `${categoryName(genre)} — ${t.libraryTitle}` : t.libraryTitle;
+    return { title: `${title} — ${brand}`, description: t.metaDescription, href: genreHref(genre), index: true };
+  }
   if (route.view === 'data') return { title: `${t.dataTitle} — ${brand}`, description: t.dataLead, href: HREF.data, index: true };
   if (route.view === 'missing') return { title: `${t.notFound} — ${brand}`, description: t.metaDescription, href: location.href, index: false };
   return { title: t.pageTitle, description: t.metaDescription, href: HREF.home, index: true };
@@ -375,7 +383,7 @@ function renderHome(catalog: Catalog | null): Node[] {
   return [hero, stats, library];
 }
 
-function renderGames(catalog: Catalog | null): Node[] {
+function renderGames(catalog: Catalog | null, genre: string | null): Node[] {
   const heading = viewHeading(`// ${t.navGames}`, t.libraryTitle);
   if (!catalog) return [heading, statusPanel()];
 
@@ -383,6 +391,7 @@ function renderGames(catalog: Catalog | null): Node[] {
   const count = h('p', { class: 'result-count', role: 'status' });
   const search = h('input', { type: 'search', class: 'search-input', placeholder: t.searchPlaceholder, 'aria-label': t.searchLabel, value: state.query, autocomplete: 'off' });
   const index = new Map(catalog.games.map((game) => [game, searchableText(game)]));
+  state.genre = genre && catalog.categories.has(genre) ? genre : '';
 
   const genres = usedGenres(catalog);
   const chipButtons = [['', catalog.games.length] as [string, number], ...genres].map(([key, total]) =>
@@ -404,6 +413,9 @@ function renderGames(catalog: Catalog | null): Node[] {
   for (const button of chipButtons) {
     button.addEventListener('click', () => {
       state.genre = button.dataset.genre ?? '';
+      // The filter is a real URL so each genre page can be linked and indexed.
+      history.replaceState(null, '', genreHref(state.genre));
+      updateChrome(parseRoute());
       update();
     });
   }
@@ -662,7 +674,7 @@ function render(navigated: boolean, animate = navigated): void {
     route.view === 'home'
       ? renderHome(catalog)
       : route.view === 'games'
-        ? renderGames(catalog)
+        ? renderGames(catalog, route.genre)
         : route.view === 'game'
           ? renderGame(catalog, route.id)
           : route.view === 'play'
