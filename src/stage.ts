@@ -99,6 +99,10 @@ const GRID_SIZE = 60;
 const GRID_STEP = 2;
 const STAR_COUNT = 700;
 const TOWER_SLOTS = 16;
+// Ambient motion reads fine at 24 fps; the display rate would more than double GPU work.
+const FRAME_INTERVAL_MS = 1000 / 24;
+// How long a still (reduced-motion) stage keeps rendering after a change.
+const WAKE_MS = 600;
 
 const RINGS: Array<{ radius: number; tint: 'cyan' | 'magenta' | 'lime'; tilt: Vec3; speed: number; width: number }> = [
   { radius: 1.7, tint: 'cyan', tilt: [0.35, 0, -0.42], speed: 0.35, width: 0.035 },
@@ -146,6 +150,7 @@ class StageScene extends Scene {
   private readonly rotation = new Quaternion();
   private readonly size = new Vector3();
   private time = 0;
+  private lastTick = 0;
   private towerGrowth = 0;
   private view: StageView;
 
@@ -282,7 +287,12 @@ class StageScene extends Scene {
     }
   }
 
-  override update(dt: number): void {
+  override update(): void {
+    // The stage driver pauses the engine between frames, which resets the engine
+    // clock, so frame time is measured here.
+    const now = performance.now();
+    const dt = this.lastTick ? Math.min(0.1, (now - this.lastTick) / 1000) : 0;
+    this.lastTick = now;
     const animate = this.motion;
     if (animate) this.time += dt;
     const ease = animate ? 1 - Math.exp(-dt * 2.2) : 1;
@@ -330,7 +340,10 @@ class StageScene extends Scene {
 export async function createStage(canvas: HTMLCanvasElement, initial: StageState): Promise<Stage | null> {
   let game: Game | undefined;
   try {
-    game = await Game.create({ canvas, renderer: 'auto', pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5) });
+    // Measured on WebGPU at 1440×900: MSAA at 1.5× resolution cost ~11 ms of GPU per
+    // frame; 1× without MSAA (FXAA still on) costs ~4 ms with no visible loss for a
+    // soft, bloomed backdrop. Below 1× the distant grid lines break up.
+    game = await Game.create({ canvas, renderer: 'auto', antialias: false, pixelRatio: 1 });
     if (!game.graphics.capabilities.threeD) {
       game.destroy();
       return null;
@@ -353,18 +366,59 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
   let state = initial;
   let current = new StageScene(white, state);
   await engine.setScene(current);
-  engine.start();
+
+  // An ambient backdrop does not need the display's full refresh rate: render at
+  // most 30 fps, and under reduced motion only for a moment after something changes.
+  // XYZ.js has no frame cap, so the engine is resumed for one frame at a time. Our
+  // rAF callback is registered after the engine's, so it runs right after each
+  // engine frame and pauses it again before the next one.
+  let wakeUntil = 0;
+  let nextFrame = 0;
+  let looping = false;
+  let failed = false;
+  const tick = (now: number): void => {
+    if (engine.state === 'running') engine.pause();
+    const due = state.motion ? now >= nextFrame : now < wakeUntil;
+    if (due) {
+      // Advance by the interval rather than from `now`, so on a 60 Hz display the gaps
+      // alternate between 2 and 3 vsyncs and average out to the target rate.
+      nextFrame = Math.max(nextFrame + FRAME_INTERVAL_MS, now - FRAME_INTERVAL_MS);
+      try {
+        engine.resume();
+      } catch (error) {
+        // After a fatal frame error the engine refuses to restart; leave the last frame up.
+        console.warn('3D stage stopped:', error);
+        failed = true;
+        looping = false;
+        return;
+      }
+    }
+    looping = state.motion || now < wakeUntil || engine.state === 'running';
+    if (looping) requestAnimationFrame(tick);
+  };
+  const wake = (): void => {
+    wakeUntil = Math.max(wakeUntil, performance.now() + WAKE_MS);
+    if (!looping && !failed) {
+      looping = true;
+      requestAnimationFrame(tick);
+    }
+  };
+  // A resize clears the canvas, so a still stage has to redraw.
+  window.addEventListener('resize', wake);
+  wake();
 
   return {
     update(next) {
       const rebuild = next.theme !== state.theme || next.motion !== state.motion || next.data.games !== state.data.games || next.data.genres.join() !== state.data.genres.join();
       state = next;
-      if (!rebuild) {
+      if (rebuild) {
+        current = new StageScene(white, next, current);
+        // Scene preparation is async; redraw once it is active as well.
+        void engine.setScene(current).then(wake);
+      } else {
         current.setView(next.view);
-        return;
       }
-      current = new StageScene(white, next, current);
-      void engine.setScene(current);
+      wake();
     },
     setPointer(x, y) {
       current.setPointer(x, y);
