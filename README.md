@@ -19,7 +19,7 @@
 
 - 語系：預設英文，可切換繁體中文、日文；選擇會存於 `localStorage`。「開始遊玩」優先使用遊戲資料的 `launchUrls[目前語系]`，沒有時使用 `url`。
 - 風格：提供深色與淺色兩種風格；首次造訪依系統偏好，選擇會存於 `localStorage`。
-- 3D 背景：以 [XYZ.js](https://github.com/YueyuHoshizora/XYZ.js) v1.7 渲染全畫面 3D 場景（星空、全像格線地板、星核與軌道環；每款遊戲一顆衛星，資料頁以分類數量生成 3D 柱狀天際線），鏡頭隨路由移動、隨滑鼠輕微視差，並跟著深色／淺色切換。引擎依 WebGPU→WebGL2 選擇後端，以獨立 chunk 延遲載入；兩者皆不可用時保留 CSS 背景。為控制 GPU 負載，場景以 1× 解析度、不開 MSAA（保留 FXAA）、最高 24 fps 渲染；系統開啟「減少動態效果」時場景保持靜止，只在切換頁面、主題或視窗大小後重繪。
+- 3D 背景：以 [XYZ.js](https://github.com/YueyuHoshizora/XYZ.js) v1.7 渲染全畫面 3D 場景（星空、全像格線地板、行星系統；資料頁以分類數量生成 3D 柱狀天際線），鏡頭隨路由移動、隨滑鼠輕微視差，並跟著深色／淺色切換。行星系統是一顆帶日冕的藍白恆星，每款遊戲對應一顆行星：行星表面為程式產生的貼圖（岩質、雲層、海洋、氣體巨行星與行星環），只受恆星點光源照明而有晝夜相位，軌道接近共面，角速度依克卜勒第三定律隨半徑遞減。引擎依 WebGPU→WebGL2 選擇後端，以獨立 chunk 延遲載入；兩者皆不可用時保留 CSS 背景。為控制 GPU 負載，場景以 1× 解析度、不開 MSAA（保留 FXAA）、最高 24 fps 渲染；系統開啟「減少動態效果」時場景保持靜止，只在切換頁面、主題或視窗大小後重繪。
 - 遊戲資料於瀏覽器執行時讀取 [GameCatalog](https://github.com/YuStellarGamesStudio/GameCatalog) 的 `allgames.json`、`games/<id>.json` 與 `categories.json`，只顯示 `status` 為 `published` 的遊戲；外部連結與封面只接受 HTTPS 網址。
 
 尚未加入帳號、後端 API 或資料儲存功能。部署流程已定義於倉庫；是否已上線，仍須以 GitHub Actions 執行結果與實際網站為準。
@@ -110,6 +110,7 @@ src/
   catalog.ts                  # GameCatalog 資料讀取與驗證
   style.css                   # 網站樣式（深色／淺色風格）
   stage.ts                    # XYZ.js 3D 背景場景
+  stage-textures.ts           # 行星、恆星、日冕與行星環的程式產生貼圖
   vite-env.d.ts               # Vite 與環境變數型別宣告
 index.html                    # 網頁入口
 package.json                  # 相依套件與 npm 指令

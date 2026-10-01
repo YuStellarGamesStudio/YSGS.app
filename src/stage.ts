@@ -1,4 +1,6 @@
-import { EnvironmentMap, Game, Geometry, Group, InstancedMesh, Line3D, Matrix4, Mesh, PBRMaterial, PerspectiveCamera, PointLight, Quaternion, Scene, Texture, Vector3 } from 'xyz.js';
+import { Billboard, EnvironmentMap, Game, Geometry, Group, InstancedMesh, Line3D, Matrix4, Mesh, PBRMaterial, PerspectiveCamera, PointLight, Quaternion, Scene, Texture, Vector3 } from 'xyz.js';
+import type { Painter } from './stage-textures';
+import { coronaTexture, paintCloudy, paintGiant, paintIce, paintOcean, paintRinged, paintRocky, paintRust, paintStar, ringTexture, sphereTexture } from './stage-textures';
 
 export type StageTheme = 'dark' | 'light';
 export type StageView = 'home' | 'games' | 'game' | 'data' | 'missing';
@@ -32,8 +34,14 @@ interface Palette {
   base: RGB;
   grid: RGB;
   cyan: RGB;
-  magenta: RGB;
-  lime: RGB;
+  /** Central star; emissive, so values above 1 bloom. */
+  primary: RGB;
+  /** Unlit halo tint around the star. */
+  corona: RGB;
+  orbit: RGB;
+  orbitOpacity: number;
+  /** Point-light intensity of the central star; the only light that should reach the planets. */
+  starLight: number;
   star: RGB;
   ambient: number;
   sun: number;
@@ -53,11 +61,15 @@ const PALETTES: Record<StageTheme, Palette> = {
     base: [0.02, 0.03, 0.05],
     grid: [0.03, 0.5, 0.7],
     cyan: [0.1, 2.6, 3.4],
-    magenta: [3.2, 0.25, 2.6],
-    lime: [1.5, 3, 0.35],
+    primary: [3.4, 3.8, 4.6],
+    corona: [1, 1.4, 2.1],
+    orbit: [0.3, 0.45, 0.65],
+    orbitOpacity: 0.3,
+    starLight: 14,
     star: [1.6, 1.9, 2.4],
     ambient: 0.15,
-    sun: 0.6,
+    // Kept dim so the planets' night sides stay dark; the star's point light does the work.
+    sun: 0.15,
     bloom: 0.9,
   },
   light: {
@@ -70,8 +82,11 @@ const PALETTES: Record<StageTheme, Palette> = {
     base: [0.75, 0.8, 0.88],
     grid: [0, 0.2, 0.32],
     cyan: [0, 0.55, 0.8],
-    magenta: [0.8, 0.04, 0.6],
-    lime: [0.3, 0.6, 0.04],
+    primary: [1.6, 1.8, 2.2],
+    corona: [1, 0.97, 0.9],
+    orbit: [0.05, 0.2, 0.36],
+    orbitOpacity: 0.55,
+    starLight: 10,
     star: [0.1, 0.18, 0.4],
     ambient: 0.6,
     sun: 1.4,
@@ -104,11 +119,40 @@ const FRAME_INTERVAL_MS = 1000 / 24;
 // How long a still (reduced-motion) stage keeps rendering after a change.
 const WAKE_MS = 600;
 
-const RINGS: Array<{ radius: number; tint: 'cyan' | 'magenta' | 'lime'; tilt: Vec3; speed: number; width: number }> = [
-  { radius: 1.7, tint: 'cyan', tilt: [0.35, 0, -0.42], speed: 0.35, width: 0.035 },
-  { radius: 2.3, tint: 'magenta', tilt: [-0.5, 0, 0.55], speed: -0.22, width: 0.03 },
-  { radius: 2.9, tint: 'lime', tilt: [0.12, 0, 0.18], speed: 0.12, width: 0.02 },
+// One planet per published game, innermost first like a real system: rocky worlds,
+// then giants. Kinds repeat if there are more games than entries.
+// `map` is the surface texture width; planets cover a few dozen pixels at most, so only
+// the giants get the larger map.
+const PLANETS: Array<{ paint: Painter; map: number; radius: number; roughness: number; axialTilt: number; ring?: boolean }> = [
+  { paint: paintRocky, map: 128, radius: 0.06, roughness: 0.95, axialTilt: 0.05 },
+  { paint: paintCloudy, map: 128, radius: 0.09, roughness: 0.9, axialTilt: 0.12 },
+  { paint: paintOcean, map: 128, radius: 0.095, roughness: 0.55, axialTilt: 0.41 },
+  { paint: paintRust, map: 128, radius: 0.075, roughness: 0.95, axialTilt: 0.44 },
+  { paint: paintGiant, map: 256, radius: 0.2, roughness: 0.8, axialTilt: 0.05 },
+  { paint: paintRinged, map: 256, radius: 0.17, roughness: 0.8, axialTilt: 0.47, ring: true },
+  { paint: paintIce, map: 128, radius: 0.13, roughness: 0.7, axialTilt: 0.5 },
 ];
+const STAR_RADIUS = 0.42;
+/** Corona radius in star radii. */
+const CORONA_SCALE = 2.8;
+const ORBIT_INNER = 1.05;
+const ORBIT_OUTER = 3.2;
+// Kepler's third law: angular speed falls off as r^-1.5, so inner worlds race ahead.
+const KEPLER = 0.75;
+// Fading wake behind each planet as [start, end] angles (radians behind it) per opacity step.
+const TRAIL: Array<{ from: number; to: number; opacity: number }> = [
+  { from: 0.12, to: 0, opacity: 1.6 },
+  { from: 0.35, to: 0.12, opacity: 0.9 },
+  { from: 0.75, to: 0.35, opacity: 0.45 },
+];
+
+export interface StageTextures {
+  white: Texture;
+  star: Texture;
+  ring: Texture;
+  corona: Texture;
+  planets: Texture[];
+}
 
 function scaled(color: RGB, factor: number): RGB {
   return [color[0] * factor, color[1] * factor, color[2] * factor];
@@ -123,9 +167,16 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-function circle(radius: number, segments = 96): Vec3[] {
+function circle(radius: number, segments: number): Vec3[] {
   return Array.from({ length: segments }, (_, i) => {
     const a = (i / segments) * Math.PI * 2;
+    return [Math.cos(a) * radius, 0, Math.sin(a) * radius];
+  });
+}
+
+function arc(radius: number, from: number, to: number, segments: number): Vec3[] {
+  return Array.from({ length: segments + 1 }, (_, i) => {
+    const a = from + ((to - from) * i) / segments;
     return [Math.cos(a) * radius, 0, Math.sin(a) * radius];
   });
 }
@@ -140,8 +191,7 @@ class StageScene extends Scene {
   private readonly grid: Group;
   private readonly stars: Group;
   private readonly core: Mesh;
-  private readonly rings: Array<{ spin: Group; speed: number }> = [];
-  private readonly satellites: Array<{ mesh: Mesh; radius: number; speed: number; phase: number }> = [];
+  private readonly planets: Array<{ holder: Group; body: Mesh; trail: Group; radius: number; speed: number; phase: number; spin: number }> = [];
   private readonly towers: InstancedMesh;
   private readonly towerHeights: number[];
   // Scratch values reused every frame to avoid per-frame allocation.
@@ -154,9 +204,10 @@ class StageScene extends Scene {
   private towerGrowth = 0;
   private view: StageView;
 
-  constructor(white: Texture, state: StageState, previous?: StageScene) {
+  constructor(textures: StageTextures, state: StageState, previous?: StageScene) {
     super();
     const p = PALETTES[state.theme];
+    const { white } = textures;
     this.motion = state.motion;
     this.view = state.view;
     const glow = (emissive: RGB, opacity = 1): PBRMaterial => {
@@ -168,7 +219,7 @@ class StageScene extends Scene {
     this.ambientLight = p.ambient;
     this.directionalLight.intensity = p.sun;
     this.directionalLight.direction.set(-0.4, 1, 0.6).normalize();
-    this.pointLights.push(new PointLight({ position: new Vector3(...CORE), color: [0.2, 0.9, 1], intensity: 12, range: 14 }));
+    this.pointLights.push(new PointLight({ position: new Vector3(...CORE), color: [0.88, 0.94, 1], intensity: p.starLight, range: 16 }));
     this.fog.enabled = true;
     this.fog.mode = 'exp2';
     this.fog.color = p.fog;
@@ -178,6 +229,8 @@ class StageScene extends Scene {
     this.postProcessing.bloomThreshold = 1;
     this.postProcessing.bloomRadius = 3;
     this.postProcessing.fxaa = true;
+    // Sorted transparency writes depth, so the corona quad punched holes in the orbits behind it.
+    this.transparency = 'weighted';
     this.background = EnvironmentMap.gradient({ zenith: p.zenith, horizon: p.horizon, ground: p.ground, width: 128 });
     const camera = new PerspectiveCamera();
     camera.fov = (55 * Math.PI) / 180;
@@ -214,25 +267,52 @@ class StageScene extends Scene {
       starMesh.setColorAt(i, tint[0], tint[1], tint[2]);
     }
 
-    // Core: glowing nucleus inside a translucent shell, wrapped by tilted orbit rings.
-    const coreGroup = this.add(new Group());
-    coreGroup.position.set(...CORE);
-    this.core = coreGroup.add(new Mesh({ geometry: Geometry.sphere(0.45, 32, 16), material: glow(scaled(p.cyan, 1.4)) }));
-    const tilts: Group[] = [];
-    for (const ring of RINGS) {
-      const tilt = coreGroup.add(new Group());
-      tilt.rotation.setFromEuler(...ring.tilt);
-      const spin = tilt.add(new Group());
-      spin.add(new Line3D(circle(ring.radius), { material: glow(scaled(p[ring.tint], ring.tint === 'lime' ? 0.6 : 1)), width: ring.width, closed: true }));
-      this.rings.push({ spin, speed: ring.speed });
-      tilts.push(tilt);
-    }
-
-    // One satellite per published game, riding the tilted ring planes.
-    for (let i = 0; i < state.data.games; i++) {
-      const ring = RINGS[i % RINGS.length]!;
-      const mesh = tilts[i % RINGS.length]!.add(new Mesh({ geometry: Geometry.sphere(0.09, 12, 8), material: glow(scaled(p[ring.tint], 1.3)) }));
-      this.satellites.push({ mesh, radius: ring.radius, speed: ring.speed * 1.6, phase: (i / state.data.games) * Math.PI * 2 });
+    // Planetary system: a blue-white star lighting one planet per published game.
+    // Planets are lit only by the star's point light, so they show real phases.
+    const system = this.add(new Group());
+    system.position.set(...CORE);
+    system.rotation.setFromEuler(0.38, 0, -0.16);
+    this.core = system.add(
+      new Mesh({
+        geometry: Geometry.sphere(STAR_RADIUS, 48, 24),
+        material: new PBRMaterial({ texture: white, color: [0, 0, 0], emissive: p.primary, emissiveTexture: textures.star, roughness: 1 }),
+      }),
+    );
+    // Bloom alone leaves a hard disc, so a soft camera-facing corona sits at the star. It is
+    // an emissive PBR billboard (Sprite3D output is too dim to read as light) and lives in the
+    // scene root because billboards ignore parent rotation.
+    const coronaSize = STAR_RADIUS * CORONA_SCALE * 2;
+    this.add(
+      new Billboard({
+        material: new PBRMaterial({ texture: textures.corona, color: [0, 0, 0], emissive: p.corona, emissiveTexture: textures.corona, transparent: true, alphaMode: 'BLEND' }),
+        width: coronaSize,
+        height: coronaSize,
+        position: CORE,
+      }),
+    );
+    const orbitMaterial = glow(p.orbit, p.orbitOpacity);
+    const trailMaterials = TRAIL.map((step) => glow(scaled(p.orbit, step.opacity), Math.min(1, p.orbitOpacity * step.opacity * 1.4)));
+    const ringMaterial = new PBRMaterial({ texture: textures.ring, roughness: 0.9, transparent: true, alphaMode: 'BLEND', doubleSided: true });
+    const orbitRandom = mulberry32(0x0b17);
+    const count = state.data.games;
+    for (let i = 0; i < count; i++) {
+      const kind = PLANETS[i % PLANETS.length]!;
+      const radius = count > 1 ? ORBIT_INNER + ((ORBIT_OUTER - ORBIT_INNER) * i) / (count - 1) : (ORBIT_INNER + ORBIT_OUTER) / 2;
+      // Real orbits are nearly coplanar: a few degrees of inclination at most.
+      const plane = system.add(new Group());
+      plane.rotation.setFromEuler((orbitRandom() - 0.5) * 0.08, 0, (orbitRandom() - 0.5) * 0.08);
+      // Sub-pixel ribbons break into dashes, so orbits stay about a pixel wide and dim instead.
+      plane.add(new Line3D(circle(radius, 160), { material: orbitMaterial, width: 0.014, closed: true }));
+      const trail = plane.add(new Group());
+      TRAIL.forEach((step, s) => trail.add(new Line3D(arc(radius, -step.from, -step.to, 12), { material: trailMaterials[s]!, width: 0.02 })));
+      // The holder keeps the spin axis fixed in space while the planet travels.
+      const holder = plane.add(new Group());
+      holder.rotation.setFromEuler(kind.axialTilt, orbitRandom() * Math.PI, 0);
+      const body = holder.add(
+        new Mesh({ geometry: Geometry.sphere(kind.radius, 32, 16), material: new PBRMaterial({ texture: textures.planets[i % PLANETS.length]!, roughness: kind.roughness }) }),
+      );
+      if (kind.ring) holder.add(new Mesh({ geometry: Geometry.plane(kind.radius * 4.7, kind.radius * 4.7), material: ringMaterial }));
+      this.planets.push({ holder, body, trail, radius, speed: KEPLER * radius ** -1.5, phase: i * 2.399, spin: 0.4 + orbitRandom() * 0.6 });
     }
 
     // Data towers: genre counts as a distant skyline of glowing pillars.
@@ -254,7 +334,7 @@ class StageScene extends Scene {
     }
     this.camera3D.lookAt(this.look);
     this.layoutTowers();
-    this.placeSatellites();
+    this.placePlanets();
   }
 
   setView(view: StageView): void {
@@ -280,10 +360,13 @@ class StageScene extends Scene {
     });
   }
 
-  private placeSatellites(): void {
-    for (const s of this.satellites) {
+  private placePlanets(): void {
+    for (const s of this.planets) {
       const a = s.phase + this.time * s.speed;
-      s.mesh.position.set(Math.cos(a) * s.radius, 0, Math.sin(a) * s.radius);
+      s.holder.position.set(Math.cos(a) * s.radius, 0, Math.sin(a) * s.radius);
+      // A Y rotation by -a carries the trail arcs (drawn behind angle 0) to angle a.
+      s.trail.rotation.setFromEuler(0, -a, 0);
+      s.body.rotation.setFromEuler(0, this.time * s.spin, 0);
     }
   }
 
@@ -314,10 +397,8 @@ class StageScene extends Scene {
     if (animate) {
       this.grid.position.z = (this.time * 0.8) % GRID_STEP;
       this.stars.rotation.setFromEuler(0, this.time * 0.01, 0);
-      for (const ring of this.rings) ring.spin.rotation.setFromEuler(0, this.time * ring.speed, 0);
-      const pulse = 1 + Math.sin(this.time * 2.4) * 0.08;
-      this.core.scale.set(pulse, pulse, pulse);
-      this.placeSatellites();
+      this.core.rotation.setFromEuler(0, this.time * 0.04, 0);
+      this.placePlanets();
     }
 
     const growthGoal = this.view === 'data' ? 1 : 0;
@@ -362,9 +443,17 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
   context.fillStyle = '#fff';
   context.fillRect(0, 0, 1, 1);
   const white = await Texture.fromImage(image);
+  // Painting runs on the main thread, so maps are made one at a time: each await
+  // yields between them instead of blocking the page in one long task.
+  const star = await sphereTexture(paintStar, 128);
+  const ring = await ringTexture();
+  const corona = await coronaTexture(1 / CORONA_SCALE);
+  const planets: Texture[] = [];
+  for (const kind of PLANETS) planets.push(await sphereTexture(kind.paint, kind.map));
+  const textures: StageTextures = { white, star, ring, corona, planets };
 
   let state = initial;
-  let current = new StageScene(white, state);
+  let current = new StageScene(textures, state);
   await engine.setScene(current);
 
   // An ambient backdrop does not need the display's full refresh rate: render at
@@ -412,7 +501,7 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
       const rebuild = next.theme !== state.theme || next.motion !== state.motion || next.data.games !== state.data.games || next.data.genres.join() !== state.data.genres.join();
       state = next;
       if (rebuild) {
-        current = new StageScene(white, next, current);
+        current = new StageScene(textures, next, current);
         // Scene preparation is async; redraw once it is active as well.
         void engine.setScene(current).then(wake);
       } else {
