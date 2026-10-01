@@ -731,8 +731,13 @@ void import('./stage')
   .then(({ createStage }) => createStage(stageCanvas, stageState(parseRoute())))
   .then((created) => {
     stage = created;
-    if (created) document.documentElement.classList.add('has-stage');
-    else stageCanvas.remove();
+    if (!created) {
+      stageCanvas.remove();
+      return;
+    }
+    document.documentElement.classList.add('has-stage');
+    // The catalog, focus or route may have changed while the engine was starting.
+    created.update(stageState(parseRoute()));
   })
   .catch((error: unknown) => {
     console.warn('3D stage failed to load:', error);
