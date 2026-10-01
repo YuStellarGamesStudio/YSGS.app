@@ -83,7 +83,8 @@ const PALETTES: Record<StageTheme, Palette> = {
 const SHOTS: Record<StageView, { position: Vec3; target: Vec3 }> = {
   home: { position: [0, 1.6, 10], target: [0, 0.9, 0] },
   games: { position: [-3, 5.5, 14], target: [1, 0.2, -4] },
-  game: { position: [5, 2.5, 9], target: [2.8, 1.2, -1] },
+  // Detail pages are text-dense on both sides, so look away from the core toward open sky.
+  game: { position: [-6, 4, 10], target: [-10, 2.5, -14] },
   data: { position: [-7, 2, 8], target: [-5, -1.5, -18] },
   missing: { position: [0, 9, 12], target: [0, 0, -2] },
 };
@@ -92,7 +93,6 @@ const CORE: Vec3 = [3.6, 1.6, 0];
 // Portrait screens stack the hero copy under the visual, so centre the core and lift it.
 const PORTRAIT_SHOTS: Partial<Record<StageView, { position: Vec3; target: Vec3 }>> = {
   home: { position: [CORE[0], 3.2, 14], target: [CORE[0], -0.6, 0] },
-  game: { position: [CORE[0], 3.2, 14], target: [CORE[0], -0.6, 0] },
 };
 const FLOOR_Y = -1.2;
 const GRID_SIZE = 60;
