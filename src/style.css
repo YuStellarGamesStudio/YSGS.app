@@ -696,10 +696,58 @@ input {
   transition: transform 0.3s var(--ease), border-color 0.3s, box-shadow 0.3s;
 }
 
-.game-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--line-strong);
-  box-shadow: var(--glow);
+.game-card::before {
+  /* Rotating conic ring (after a-music.app). The evenodd polygon cuts a hole
+     inset by --ring-w so the ring follows the chamfered corners; 0.62px is
+     --ring-w × (√2 − 1), the inner chamfer shift for a 45° cut. */
+  --ring-w: 1.5px;
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: 1;
+  background: conic-gradient(from var(--card-ring-angle), var(--accent), var(--accent-2), var(--accent-2), var(--accent), var(--accent));
+  clip-path: polygon(evenodd,
+    0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 0,
+    var(--ring-w) var(--ring-w), calc(100% - var(--cut) - 0.62px) var(--ring-w), calc(100% - var(--ring-w)) calc(var(--cut) + 0.62px),
+    calc(100% - var(--ring-w)) calc(100% - var(--ring-w)), calc(var(--cut) + 0.62px) calc(100% - var(--ring-w)),
+    var(--ring-w) calc(100% - var(--cut) - 0.62px), var(--ring-w) var(--ring-w));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+  animation: card-ring-spin 3.5s linear infinite paused;
+}
+
+/* Touch browsers keep :hover/:focus-within stuck after a tap, so the lift and
+   ring only apply where a real mouse pointer exists. */
+@media (hover: hover) and (pointer: fine) {
+  .game-card:hover,
+  .game-card:focus-within {
+    transform: translateY(-4px);
+    border-color: transparent;
+    box-shadow: var(--glow);
+  }
+
+  .game-card:hover::before,
+  .game-card:focus-within::before {
+    opacity: 1;
+    animation-play-state: running;
+  }
+
+  .game-card:hover .cover-frame img {
+    transform: scale(1.05);
+  }
+}
+
+@property --card-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes card-ring-spin {
+  to {
+    --card-ring-angle: 360deg;
+  }
 }
 
 .cover-frame {
@@ -743,10 +791,6 @@ input {
   inset: 0;
   background: linear-gradient(to top, var(--surface-solid), transparent 45%);
   opacity: 0.85;
-}
-
-.game-card:hover .cover-frame img {
-  transform: scale(1.05);
 }
 
 .card-body {
