@@ -90,6 +90,10 @@ npm run preview
 .github/workflows/
   ci.yml                       # PR 檢查與可重用 CI
   pages.yml                    # main 的 GitHub Pages 部署
+design/
+  og-image.svg                 # 分享圖原始檔（修改後重新輸出成 public/og-image.png）
+public/
+  og-image.png                 # 1200×630 Open Graph 分享圖
 scripts/
   copy-pages-files.mjs         # 將根目錄標記檔案複製到 dist
 src/

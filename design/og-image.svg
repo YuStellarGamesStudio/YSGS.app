@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00e5ff" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="glowC" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#00e5ff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#00e5ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowM" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff2bd6" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#ff2bd6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="title" x1="0" x2="1">
+      <stop offset="0" stop-color="#e8fbff"/>
+      <stop offset="0.55" stop-color="#7df3ff"/>
+      <stop offset="1" stop-color="#ff7be6"/>
+    </linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="3"/></filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="#05070d"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <circle cx="930" cy="300" r="330" fill="url(#glowC)"/>
+  <circle cx="1080" cy="560" r="260" fill="url(#glowM)"/>
+
+  <!-- Orbit visual -->
+  <g transform="translate(930 315)" fill="none">
+    <circle r="210" stroke="#00e5ff" stroke-opacity="0.25" stroke-dasharray="2 10"/>
+    <ellipse rx="230" ry="78" transform="rotate(-24)" stroke="#00e5ff" stroke-opacity="0.75" stroke-width="2"/>
+    <ellipse rx="190" ry="60" transform="rotate(32)" stroke="#ff2bd6" stroke-opacity="0.7" stroke-width="2"/>
+    <ellipse rx="150" ry="150" stroke="#b6ff3b" stroke-opacity="0.35" stroke-dasharray="40 14"/>
+    <circle r="62" fill="#00e5ff" fill-opacity="0.12" stroke="#00e5ff" stroke-width="2"/>
+    <circle r="62" stroke="#00e5ff" stroke-width="6" filter="url(#blur)" stroke-opacity="0.6"/>
+    <path d="M0-30 8.5-8.5 30 0 8.5 8.5 0 30-8.5 8.5-30 0-8.5-8.5Z" fill="#e8fbff"/>
+    <circle cx="210" cy="-93" r="8" fill="#00e5ff"/>
+    <circle cx="-150" cy="-97" r="6" fill="#ff2bd6"/>
+    <circle cx="106" cy="104" r="5" fill="#b6ff3b"/>
+  </g>
+
+  <!-- HUD frame -->
+  <g fill="none" stroke="#00e5ff" stroke-width="3" stroke-opacity="0.85">
+    <path d="M40 90V40H90"/>
+    <path d="M1110 40H1160V90"/>
+    <path d="M40 540V590H90"/>
+    <path d="M1110 590H1160V540"/>
+  </g>
+
+  <g font-family="'SF Mono', Menlo, Consolas, monospace" font-size="20" letter-spacing="3">
+    <text x="88" y="150" fill="#00e5ff">// YUSTELLARGAMESSTUDIO</text>
+    <text x="88" y="540" fill="#7f8ba3">ysgs.app</text>
+    <text x="1112" y="540" fill="#b6ff3b" text-anchor="end">● ONLINE</text>
+  </g>
+
+  <text x="84" y="268" font-family="'Avenir Next', 'Segoe UI', system-ui, sans-serif" font-size="104" font-weight="800" letter-spacing="-2" fill="url(#title)">YSGS Games</text>
+  <text x="88" y="336" font-family="'Avenir Next', 'Segoe UI', system-ui, sans-serif" font-size="36" font-weight="500" fill="#c9d6ea">Play browser games. Explore live data.</text>
+
+  <g font-family="'SF Mono', Menlo, Consolas, monospace" font-size="18" letter-spacing="2" font-weight="600">
+    <g transform="translate(88 392)">
+      <path d="M0 0H160L174 14V44H14L0 30Z" fill="#00e5ff" fill-opacity="0.12" stroke="#00e5ff"/>
+      <text x="87" y="28" fill="#7df3ff" text-anchor="middle">GAME LIBRARY</text>
+    </g>
+    <g transform="translate(280 392)">
+      <path d="M0 0H160L174 14V44H14L0 30Z" fill="#ff2bd6" fill-opacity="0.12" stroke="#ff2bd6"/>
+      <text x="87" y="28" fill="#ff8fe9" text-anchor="middle">DATA CONSOLE</text>
+    </g>
+    <g transform="translate(472 392)">
+      <path d="M0 0H156L170 14V44H14L0 30Z" fill="#b6ff3b" fill-opacity="0.1" stroke="#b6ff3b"/>
+      <text x="85" y="28" fill="#d4ff8a" text-anchor="middle" letter-spacing="1">EN · 中 · 日</text>
+    </g>
+  </g>
+</svg>
