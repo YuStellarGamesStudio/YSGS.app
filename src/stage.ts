@@ -1,7 +1,7 @@
 import { Billboard, EnvironmentMap, Game, Geometry, Group, InstancedMesh, Line3D, Matrix4, Mesh, PBRMaterial, PerspectiveCamera, PointLight, Quaternion, Scene, Texture, Vector3 } from 'xyz.js';
 import type { PBRMaterialOptions } from 'xyz.js';
 import type { Painter } from './stage-textures';
-import { coronaTexture, paintCloudy, paintGiant, paintIce, paintOcean, paintRinged, paintRocky, paintRust, paintStar, ringTexture, sphereTexture } from './stage-textures';
+import { coronaTexture, nebulaTexture, paintCloudy, paintGiant, paintIce, paintOcean, paintRinged, paintRocky, paintRust, paintStar, ringTexture, sphereTexture } from './stage-textures';
 
 export type StageTheme = 'dark' | 'light';
 export type StageView = 'home' | 'games' | 'game' | 'data' | 'missing';
@@ -40,8 +40,13 @@ interface Palette {
   base: RGB;
   grid: RGB;
   cyan: RGB;
+  magenta: RGB;
   /** Central star; emissive, so values above 1 bloom. */
   primary: RGB;
+  /** Emissive tints of the two nebula clouds, and their opacity. */
+  nebulaA: RGB;
+  nebulaB: RGB;
+  nebulaOpacity: number;
   /** Unlit halo tint around the star. */
   corona: RGB;
   orbit: RGB;
@@ -67,6 +72,10 @@ const PALETTES: Record<StageTheme, Palette> = {
     base: [0.02, 0.03, 0.05],
     grid: [0.02, 0.3, 0.42],
     cyan: [0.1, 2.6, 3.4],
+    magenta: [3.2, 0.25, 1.9],
+    nebulaA: [2.2, 0.3, 1.7],
+    nebulaB: [0.2, 1.2, 2.4],
+    nebulaOpacity: 0.75,
     primary: [3.4, 3.8, 4.6],
     corona: [1, 1.4, 2.1],
     orbit: [0.3, 0.45, 0.65],
@@ -88,6 +97,10 @@ const PALETTES: Record<StageTheme, Palette> = {
     base: [0.75, 0.8, 0.88],
     grid: [0.2, 0.36, 0.48],
     cyan: [0, 0.55, 0.8],
+    magenta: [0.75, 0.05, 0.45],
+    nebulaA: [0.85, 0.45, 0.8],
+    nebulaB: [0.4, 0.7, 1],
+    nebulaOpacity: 0.28,
     primary: [1.6, 1.8, 2.2],
     corona: [1, 0.97, 0.9],
     orbit: [0.05, 0.2, 0.36],
@@ -137,6 +150,22 @@ const GRID_FAR = -46;
 const GRID_SAMPLE_STEP = 1;
 const STAR_COUNT = 700;
 const TOWER_SLOTS = 16;
+// Nebulae sit well behind the stars; fog thins them, so they are drawn large and bright.
+const NEBULAE: Array<{ position: Vec3; size: number; tint: 'nebulaA' | 'nebulaB' }> = [
+  { position: [-6, 9, -34], size: 40, tint: 'nebulaA' },
+  { position: [20, 6, -36], size: 46, tint: 'nebulaB' },
+  { position: [-26, 6, -10], size: 34, tint: 'nebulaB' },
+];
+// Scanner reticle around the star: a tick ring just outside the corona, and three bright arcs inside it.
+const SCANNER_RADIUS = 0.82;
+const SCANNER_TICKS = 120;
+// Asteroid belt between the rocky inner worlds and the giants.
+const BELT_ROCKS = 220;
+const BELT_WIDTH = 0.16;
+// Capital ship drifting past in the middle distance, as [x, y, z].
+const SHIP: Vec3 = [1.5, 5.2, -18];
+const SHIP_LENGTH = 7;
+const SHIP_WINDOW_COLUMNS = 28;
 // Ambient motion reads fine at 24 fps; the display rate would more than double GPU work.
 const FRAME_INTERVAL_MS = 1000 / 24;
 // How long a still (reduced-motion) stage keeps rendering after a change.
@@ -174,6 +203,7 @@ export interface StageTextures {
   star: Texture;
   ring: Texture;
   corona: Texture;
+  nebulae: Texture[];
   planets: Texture[];
 }
 
@@ -268,6 +298,10 @@ class StageScene extends Scene {
   private readonly core: Mesh;
   private readonly planets: Array<{ holder: Group; body: Mesh; trail: Group; radius: number; speed: number; phase: number; spin: number }> = [];
   private readonly towers: InstancedMesh;
+  private readonly scanner: Group;
+  private belt: Group | null = null;
+  private beltSpeed = 0;
+  private readonly ship: Group;
   private readonly towerHeights: number[];
   // Scratch values reused every frame to avoid per-frame allocation.
   private readonly matrix = new Matrix4();
@@ -395,6 +429,74 @@ class StageScene extends Scene {
       this.planets.push({ holder, body, trail, radius, speed: KEPLER * radius ** -1.5, phase: i * 2.399, spin: 0.4 + orbitRandom() * 0.6 });
     }
 
+    // HUD scanner locked onto the star: a ring of ticks counter-rotating under three bright arcs.
+    this.scanner = system.add(new Group());
+    const ticks = this.scanner.add(new InstancedMesh({ geometry: Geometry.cube(1), material: glow(scaled(p.cyan, 0.7), 0.9), count: SCANNER_TICKS }));
+    for (let i = 0; i < SCANNER_TICKS; i++) {
+      const a = (i / SCANNER_TICKS) * Math.PI * 2;
+      const length = i % 10 === 0 ? 0.16 : 0.06;
+      ticks.setMatrixAt(i, m.compose(pos.set(Math.cos(a) * (SCANNER_RADIUS + length / 2), 0, Math.sin(a) * (SCANNER_RADIUS + length / 2)), rot.setFromEuler(0, -a, 0), size.set(length, 0.012, 0.012)));
+    }
+    const scannerArcs: Array<[number, number, RGB]> = [
+      [0.2, 1.3, p.cyan],
+      [2.3, 3.0, p.magenta],
+      [4.1, 5.4, p.cyan],
+    ];
+    for (const [from, to, color] of scannerArcs) this.scanner.add(new Line3D(arc(SCANNER_RADIUS - 0.07, from, to, 24), { material: glow(color), width: 0.03 }));
+
+    // Asteroid belt in the gap between the rocky worlds and the giants.
+    if (count > 4) {
+      const radius = ORBIT_INNER + ((ORBIT_OUTER - ORBIT_INNER) * 3.5) / (count - 1);
+      this.beltSpeed = KEPLER * radius ** -1.5;
+      this.belt = system.add(new Group());
+      const rocks = this.belt.add(new InstancedMesh({ geometry: Geometry.cube(1), material: new PBRMaterial({ texture: white, color: [0.55, 0.5, 0.45], roughness: 1 }), count: BELT_ROCKS }));
+      const beltRandom = mulberry32(0xa57e);
+      for (let i = 0; i < BELT_ROCKS; i++) {
+        const a = beltRandom() * Math.PI * 2;
+        const r = radius + (beltRandom() - 0.5) * BELT_WIDTH;
+        const rock = 0.01 + beltRandom() ** 3 * 0.03;
+        rocks.setMatrixAt(i, m.compose(pos.set(Math.cos(a) * r, (beltRandom() - 0.5) * 0.03, Math.sin(a) * r), rot.setFromEuler(beltRandom() * 3, beltRandom() * 3, 0), size.set(rock, rock * (0.6 + beltRandom() * 0.6), rock)));
+      }
+    }
+
+    // Nebulae: huge soft gas clouds far behind the stars, tinted by the palette.
+    NEBULAE.forEach((nebula, i) => {
+      this.add(
+        new Billboard({
+          material: new PBRMaterial({ texture: textures.nebulae[i]!, color: [0, 0, 0], emissive: p[nebula.tint], emissiveTexture: textures.nebulae[i]!, opacity: p.nebulaOpacity, transparent: true, alphaMode: 'BLEND' }),
+          width: nebula.size,
+          height: nebula.size,
+          position: nebula.position,
+        }),
+      );
+    });
+
+    // A capital ship drifting through the middle distance: dark hull, lit windows, engine glow.
+    this.ship = this.add(new Group());
+    this.ship.position.set(...SHIP);
+    this.ship.rotation.setFromEuler(0, 0.35, 0);
+    const hull = new PBRMaterial({ texture: white, color: p.tintedSurfaces ? [0.32, 0.38, 0.5] : [0.16, 0.2, 0.28], roughness: 0.45 });
+    const half = SHIP_LENGTH / 2;
+    const hullParts: Array<{ position: Vec3; scale: Vec3 }> = [
+      { position: [0, 0, 0], scale: [SHIP_LENGTH, 0.7, 1.4] },
+      { position: [-half * 0.45, 0.6, 0], scale: [1.6, 0.5, 0.8] },
+      { position: [half * 0.2, -0.45, 0], scale: [SHIP_LENGTH * 0.5, 0.25, 1] },
+      { position: [half + 0.35, 0.1, 0.55], scale: [0.9, 0.4, 0.4] },
+      { position: [half + 0.35, 0.1, -0.55], scale: [0.9, 0.4, 0.4] },
+    ];
+    for (const part of hullParts) this.ship.add(new Mesh({ geometry: Geometry.cube(1), material: hull, position: part.position, scale: part.scale }));
+    const engineMaterial = glow(p.cyan);
+    for (const z of [0.55, -0.55]) this.ship.add(new Mesh({ geometry: Geometry.cube(1), material: engineMaterial, position: [half + 0.85, 0.1, z], scale: [0.12, 0.28, 0.28] }));
+    this.ship.add(new Mesh({ geometry: Geometry.sphere(0.07, 8, 6), material: glow(p.magenta), position: [-half * 0.45, 1.0, 0] }));
+    const windows = this.ship.add(new InstancedMesh({ geometry: Geometry.cube(1), material: glow([2.4, 1.9, 1.1]), count: SHIP_WINDOW_COLUMNS * 2 }));
+    const windowRandom = mulberry32(0x5417);
+    for (let row = 0; row < 2; row++) {
+      for (let i = 0; i < SHIP_WINDOW_COLUMNS; i++) {
+        const lit = windowRandom() > 0.25 ? 1 : 0.001;
+        windows.setMatrixAt(row * SHIP_WINDOW_COLUMNS + i, m.compose(pos.set(-half + 0.3 + (i * (SHIP_LENGTH - 0.6)) / (SHIP_WINDOW_COLUMNS - 1), 0.12 - row * 0.2, 0.71), rot.setFromEuler(0, 0, 0), size.set(0.1 * lit, 0.06 * lit, 0.02)));
+      }
+    }
+
     // Data towers: genre counts as a distant skyline of glowing pillars.
     const counts = state.data.genres.slice(0, TOWER_SLOTS);
     const maxCount = Math.max(1, ...counts);
@@ -515,6 +617,9 @@ class StageScene extends Scene {
     if (animate) {
       this.stars.rotation.setFromEuler(0, this.time * 0.01, 0);
       this.core.rotation.setFromEuler(0, this.time * 0.04, 0);
+      this.scanner.rotation.setFromEuler(0, -this.time * 0.18, 0);
+      if (this.belt) this.belt.rotation.setFromEuler(0, this.time * this.beltSpeed, 0);
+      this.ship.position.set(SHIP[0] + Math.sin(this.time * 0.04) * 1.8, SHIP[1], SHIP[2]);
       this.placePlanets();
     }
 
@@ -565,9 +670,11 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
   const star = await sphereTexture(paintStar, 128);
   const ring = await ringTexture();
   const corona = await coronaTexture(1 / CORONA_SCALE);
+  const nebulae: Texture[] = [];
+  for (let i = 0; i < NEBULAE.length; i++) nebulae.push(await nebulaTexture(i * 7.3 + 1.7));
   const planets: Texture[] = [];
   for (const kind of PLANETS) planets.push(await sphereTexture(kind.paint, kind.map));
-  const textures: StageTextures = { white, star, ring, corona, planets };
+  const textures: StageTextures = { white, star, ring, corona, nebulae, planets };
 
   let state = initial;
   let current = new StageScene(textures, state);

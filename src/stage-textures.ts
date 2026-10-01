@@ -127,6 +127,32 @@ export function coronaTexture(limb: number, size = 256): Promise<Texture> {
   return Texture.fromImage(canvas);
 }
 
+/** Soft gas cloud for a camera-facing nebula: white with a noisy, radially fading alpha, tinted by the material. */
+export function nebulaTexture(seed: number, size = 256): Promise<Texture> {
+  const canvas = new OffscreenCanvas(size, size);
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('2D canvas context unavailable');
+  const image = context.createImageData(size, size);
+  const data = image.data;
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const x = (i + 0.5) / size - 0.5;
+      const y = (j + 0.5) / size - 0.5;
+      const falloff = Math.max(0, 1 - Math.hypot(x, y) * 2) ** 1.5;
+      // Domain-warped noise gives the wispy filaments of a real emission nebula.
+      const warp = fbm(x * 3 + seed, y * 3, seed * 0.5, 3);
+      const cloud = fbm(x * 5 + warp * 2.2, y * 5 + warp * 2.2, seed, 5);
+      const o = (j * size + i) * 4;
+      data[o] = 255;
+      data[o + 1] = 255;
+      data[o + 2] = 255;
+      data[o + 3] = Math.min(1, Math.max(0, (cloud - 0.38) * 2.6) * falloff) * 255;
+    }
+  }
+  context.putImageData(image, 0, 0);
+  return Texture.fromImage(canvas);
+}
+
 /** Faint photosphere granulation; tinted by the material's emissive factor. */
 export const paintStar: Painter = (x, y, z) => {
   const v = 0.86 + fbm(x * 14, y * 14, z * 14, 3) * 0.14;
