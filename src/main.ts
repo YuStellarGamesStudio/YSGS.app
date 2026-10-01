@@ -4,7 +4,7 @@ import { defaultLocale, isLocale, localeMeta, locales, messages, type Locale, ty
 import type { Stage, StageState } from './stage';
 
 type Theme = 'dark' | 'light';
-type Route = { view: 'home' } | { view: 'games' } | { view: 'game'; id: string } | { view: 'data' } | { view: 'missing' };
+type Route = { view: 'home' } | { view: 'games' } | { view: 'game'; id: string } | { view: 'play'; id: string } | { view: 'data' } | { view: 'missing' };
 
 const LOCALE_KEY = 'ysgs-locale';
 const THEME_KEY = 'ysgs-theme';
@@ -96,6 +96,7 @@ function parseRoute(): Route {
   if (extra !== undefined) return { view: 'missing' };
   if (section === '' && id === undefined) return { view: 'home' };
   if (section === 'games') return id ? { view: 'game', id } : { view: 'games' };
+  if (section === 'play' && id) return { view: 'play', id };
   if (section === 'data' && id === undefined) return { view: 'data' };
   return { view: 'missing' };
 }
@@ -135,8 +136,9 @@ function stageState(route: Route): StageState {
   const catalog = state.catalog;
   return {
     theme: state.theme,
-    view: route.view,
-    motion: !reducedMotion.matches,
+    view: route.view === 'play' ? 'game' : route.view,
+    // The stage is hidden behind a running game, so stop animating it.
+    motion: !reducedMotion.matches && route.view !== 'play',
     data: { games: catalog?.games.length ?? 0, genres: catalog ? usedGenres(catalog).map(([, count]) => count) : [] },
   };
 }
@@ -153,7 +155,7 @@ function updateChrome(route: Route): void {
   navLinks.home.textContent = t.navHome;
   navLinks.games.textContent = t.navGames;
   navLinks.data.textContent = t.navData;
-  const active = route.view === 'game' ? 'games' : route.view;
+  const active = route.view === 'game' || route.view === 'play' ? 'games' : route.view;
   for (const [view, link] of Object.entries(navLinks)) {
     if (view === active) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
@@ -202,7 +204,7 @@ function coverImage(game: Game, className: string): HTMLElement {
 }
 
 function playButton(game: Game): HTMLAnchorElement {
-  return externalLink(game.launchUrls[state.locale] ?? game.url, 'btn btn-primary', icon('play'), t.play);
+  return h('a', { href: `#/play/${encodeURIComponent(game.id)}`, class: 'btn btn-primary' }, icon('play'), t.play);
 }
 
 function gameCard(game: Game): HTMLElement {
@@ -377,6 +379,26 @@ function renderGame(catalog: Catalog | null, id: string): Node[] {
   ];
 }
 
+function renderPlay(catalog: Catalog | null, id: string): Node[] {
+  if (!catalog) return [statusPanel()];
+  const game = catalog.games.find((candidate) => candidate.id === id);
+  if (!game) return renderMissing();
+  return [
+    h(
+      'div',
+      { class: 'player' },
+      h('iframe', {
+        class: 'player-frame',
+        src: game.launchUrls[state.locale] ?? game.url,
+        title: gameText(game, state.locale).name,
+        allow: 'fullscreen; autoplay; gamepad; clipboard-write',
+        allowfullscreen: true,
+      }),
+      h('a', { href: `#/games/${encodeURIComponent(game.id)}`, class: 'player-exit', title: t.exitGame, 'aria-label': t.exitGame }, icon('back')),
+    ),
+  ];
+}
+
 function renderData(catalog: Catalog | null): Node[] {
   const heading = viewHeading(t.dataKicker, t.dataTitle, t.dataLead);
   if (!catalog) return [heading, statusPanel()];
@@ -537,15 +559,17 @@ function render(navigated: boolean, animate = navigated): void {
         ? renderGames(catalog)
         : route.view === 'game'
           ? renderGame(catalog, route.id)
-          : route.view === 'data'
-            ? renderData(catalog)
-            : renderMissing();
+          : route.view === 'play'
+            ? renderPlay(catalog, route.id)
+            : route.view === 'data'
+              ? renderData(catalog)
+              : renderMissing();
   main.replaceChildren(h('div', { class: `view view-${route.view}` }, ...nodes));
   main.dataset.view = route.view;
   countUp(main, animate);
   if (navigated) {
     window.scrollTo({ top: 0 });
-    main.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
+    main.querySelector<HTMLElement>('h1, iframe')?.focus({ preventScroll: true });
   }
 }
 
@@ -592,6 +616,11 @@ skipLink.addEventListener('click', (event) => {
   main.focus();
 });
 window.addEventListener('hashchange', () => render(true));
+window.addEventListener('keydown', (event) => {
+  // Only reaches us while focus is outside the game frame, e.g. on the exit button.
+  const route = parseRoute();
+  if (event.key === 'Escape' && route.view === 'play') location.hash = `#/games/${encodeURIComponent(route.id)}`;
+});
 reducedMotion.addEventListener('change', () => stage?.update(stageState(parseRoute())));
 window.addEventListener('pointermove', (event) => {
   if (!reducedMotion.matches) stage?.setPointer((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);
