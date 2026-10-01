@@ -97,6 +97,7 @@ npm run preview
 .github/workflows/
   ci.yml                       # PR 檢查與可重用 CI
   pages.yml                    # main 的 GitHub Pages 部署
+  scheduled-deploy.yml         # 每 5 分鐘以 github-actions[bot] 派送 Pages 部署
 design/
   og-image.svg                 # 分享圖原始檔（修改後重新輸出成 public/og-image.png）
   favicon.svg                  # 網站圖示原始檔（修改後重新輸出成 public/favicon.ico）
@@ -153,7 +154,7 @@ LICENSE                       # 授權條款
 
 ### GitHub Pages 部署
 
-[Pages workflow](.github/workflows/pages.yml) 在推送至 `main`、手動執行或每 5 分鐘排程（cron `*/5 * * * *`，供 sitemap 追上 GameCatalog 的更新）時觸發；工作僅允許在 `main` 上執行。GitHub 可能延遲或略過排程執行，且排程只會在預設分支上運作。
+[Pages workflow](.github/workflows/pages.yml) 在推送至 `main` 或手動執行時觸發；工作僅允許在 `main` 上執行。為了讓 sitemap 追上 GameCatalog 的更新，[Scheduled Pages deploy](.github/workflows/scheduled-deploy.yml) 每 5 分鐘（cron `*/5 * * * *`）以 `GITHUB_TOKEN` 派送 Pages workflow，因此部署執行者顯示為 `github-actions[bot]`。GitHub 可能延遲或略過排程執行，且排程只會在預設分支上運作。
 
 ```text
 推送 main／手動執行 main

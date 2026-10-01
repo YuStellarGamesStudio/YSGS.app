@@ -253,7 +253,8 @@ The committed CI workflow runs `npm audit --audit-level=high` against the locked
 The committed workflows use the following build and deployment model:
 
 - `.github/workflows/ci.yml` runs on pull requests targeting `main`, manual dispatch, and reusable workflow calls. It uses Node.js 24, `npm ci`, strict TypeScript checking, dependency auditing, and a Vite production build.
-- `.github/workflows/pages.yml` runs on pushes to `main`, manual dispatch, or a five-minute schedule (`*/5 * * * *`) that keeps the sitemap in step with the GameCatalog. GitHub may delay or skip scheduled runs. Its jobs are gated to `main`, and it calls the same CI workflow to produce the Pages artifact rather than rebuilding after validation.
+- `.github/workflows/pages.yml` runs on pushes to `main` or manual dispatch, including dispatches from the scheduler below. Its jobs are gated to `main`, and it calls the same CI workflow to produce the Pages artifact rather than rebuilding after validation.
+- `.github/workflows/scheduled-deploy.yml` runs on a five-minute schedule (`*/5 * * * *`) to keep the sitemap in step with the GameCatalog. Its only job has `actions: write` and runs `gh workflow run pages.yml --ref main` with `GITHUB_TOKEN`, so the resulting Pages run is attributed to `github-actions[bot]`. GitHub may delay or skip scheduled runs.
 - Only the deployment job receives `pages: write` and `id-token: write`; the build uses `contents: read`. Checkout does not persist repository credentials. No custom deployment secret is required by these workflow definitions.
 - The deployment depends on successful CI and publishes only `dist`, including the existing domain marker files, through GitHub's official Pages artifact and deployment actions.
 - Actions are pinned to resolved commit SHAs. The deployment targets the `github-pages` environment, with concurrency configured not to interrupt an active Pages run.
