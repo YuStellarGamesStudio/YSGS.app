@@ -92,7 +92,9 @@ npm run preview
   pages.yml                    # main 的 GitHub Pages 部署
 design/
   og-image.svg                 # 分享圖原始檔（修改後重新輸出成 public/og-image.png）
+  favicon.svg                  # 網站圖示原始檔（修改後重新輸出成 public/favicon.ico）
 public/
+  favicon.ico                  # 16／32／48 px 網站圖示
   og-image.png                 # 1200×630 Open Graph 分享圖
   robots.txt                   # 允許所有爬蟲並指向 sitemap
   sitemap.xml                  # 只列首頁；hash 路由（#/…）無法個別收錄
