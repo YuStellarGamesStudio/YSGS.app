@@ -278,7 +278,7 @@ function gameCard(game: Game): HTMLElement {
     h(
       'div',
       { class: 'card-body' },
-      h('p', { class: 'card-id' }, `// ${game.id}`),
+      h('p', { class: 'card-id' }, h('span', {}, `// ${game.id}`), h('span', { class: 'card-status', 'aria-hidden': 'true' }, 'ONLINE')),
       h('h3', { class: 'card-title' }, h('a', { href: detail }, text.name)),
       categoryChips(game.categories),
       h('p', { class: 'card-desc' }, text.description),
@@ -337,7 +337,7 @@ function renderHome(catalog: Catalog | null): Node[] {
     h(
       'div',
       { class: 'hero-copy' },
-      h('p', { class: 'kicker' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), t.heroKicker),
+      h('p', { class: 'kicker' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), t.heroKicker, catalog ? h('span', { class: 'kicker-meta', 'aria-hidden': 'true' }, `SIGNALS ${String(catalog.games.length).padStart(2, '0')}`) : null),
       // CJK lines may break between any two characters; keep each word whole so the title never splits 遊戲.
       h('h1', { tabindex: -1 }, ...Array.from(new Intl.Segmenter(state.locale, { granularity: 'word' }).segment(t.heroTitle), (part) => (part.isWordLike ? h('span', { class: 'nowrap' }, part.segment) : part.segment))),
       h('p', { class: 'lead' }, t.heroLead),

@@ -1342,6 +1342,199 @@ input {
   gap: 1.2rem;
 }
 
+/* ---------- Sci-fi HUD details ---------- */
+
+/* Viewport frame: corner brackets plus a tick ruler on the left edge, as if the page were a cockpit display. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0.6rem;
+  z-index: 60;
+  pointer-events: none;
+  --b: 1.4rem;
+  --w: 2px;
+  background:
+    linear-gradient(var(--accent), var(--accent)) top left / var(--b) var(--w) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) top left / var(--w) var(--b) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) top right / var(--b) var(--w) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) top right / var(--w) var(--b) no-repeat,
+    linear-gradient(var(--accent-2), var(--accent-2)) bottom left / var(--b) var(--w) no-repeat,
+    linear-gradient(var(--accent-2), var(--accent-2)) bottom left / var(--w) var(--b) no-repeat,
+    linear-gradient(var(--accent-2), var(--accent-2)) bottom right / var(--b) var(--w) no-repeat,
+    linear-gradient(var(--accent-2), var(--accent-2)) bottom right / var(--w) var(--b) no-repeat;
+  opacity: 0.55;
+}
+
+#app::before {
+  content: '';
+  position: fixed;
+  top: 22%;
+  bottom: 22%;
+  left: 0.9rem;
+  width: 0.5rem;
+  z-index: 60;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, var(--accent) 0 1px, transparent 1px 0.9rem) top left / 100% 100% no-repeat,
+    repeating-linear-gradient(to bottom, var(--accent) 0 1px, transparent 1px 4.5rem) top left / 0.9rem 100% no-repeat;
+  mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 75%, transparent);
+  opacity: 0.4;
+}
+
+/* A bright pulse sweeps along the header's lower edge. */
+.site-header::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent) 50%, transparent) 0 0 / 30% 100% no-repeat;
+  animation: header-scan 6s linear infinite;
+}
+
+@keyframes header-scan {
+  from {
+    background-position-x: -30%;
+  }
+  to {
+    background-position-x: 130%;
+  }
+}
+
+.kicker-meta {
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.section-head {
+  position: relative;
+}
+
+.section-head::after {
+  content: '';
+  position: absolute;
+  inset: auto auto -1px 0;
+  width: 5rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: var(--glow);
+}
+
+.section-head h2::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-inline-end: 0.6rem;
+  background: var(--accent-2);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+/* Data-bar ticks in the corner of each stat tile. */
+.stat-tile::after {
+  content: '';
+  position: absolute;
+  top: 0.7rem;
+  right: 1.6rem;
+  width: 2.4rem;
+  height: 0.5rem;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 2px, transparent 2px 5px);
+  opacity: 0.35;
+}
+
+/* Targeting brackets on every cover, and a scan line that sweeps a card's art on hover. */
+.cover-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0.5rem;
+  z-index: 1;
+  pointer-events: none;
+  --b: 0.9rem;
+  --w: 1.5px;
+  background:
+    linear-gradient(var(--accent), var(--accent)) top left / var(--b) var(--w) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) top left / var(--w) var(--b) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) top right / var(--b) var(--w) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) top right / var(--w) var(--b) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) bottom left / var(--b) var(--w) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) bottom left / var(--w) var(--b) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) bottom right / var(--b) var(--w) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) bottom right / var(--w) var(--b) no-repeat;
+  opacity: 0.7;
+}
+
+.card-media {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-media::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 28%;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 35%, transparent) 90%, var(--accent));
+  background-size: 100% 100%;
+  border-bottom: 1px solid var(--accent);
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .game-card:hover .card-media::after {
+    animation: cover-scan 1.1s var(--ease);
+  }
+}
+
+@keyframes cover-scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(360%);
+    opacity: 0;
+  }
+}
+
+.card-id {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--accent-3);
+  letter-spacing: 0.14em;
+}
+
+.card-status::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: blink 2.4s steps(2, start) infinite;
+}
+
+@media (max-width: 860px) {
+  #app::before,
+  .kicker-meta {
+    display: none;
+  }
+}
+
+html:has(.view-play) body::before,
+html:has(.view-play) #app::before {
+  display: none;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 860px) {
