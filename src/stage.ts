@@ -1,4 +1,5 @@
 import { Billboard, EnvironmentMap, Game, Geometry, Group, InstancedMesh, Line3D, Matrix4, Mesh, PBRMaterial, PerspectiveCamera, PointLight, Quaternion, Scene, Texture, Vector3 } from 'xyz.js';
+import type { PBRMaterialOptions } from 'xyz.js';
 import type { Painter } from './stage-textures';
 import { coronaTexture, paintCloudy, paintGiant, paintIce, paintOcean, paintRinged, paintRocky, paintRust, paintStar, ringTexture, sphereTexture } from './stage-textures';
 
@@ -99,24 +100,41 @@ const PALETTES: Record<StageTheme, Palette> = {
   },
 };
 
+interface Shot {
+  position: Vec3;
+  target: Vec3;
+  /** Floor fade as [start, end] world z: full strength nearer than start, gone past end.
+   *  Views that show the planetary system end the floor in front of it, so grid lines
+   *  never run behind its orbits and planets. */
+  floor: [number, number];
+}
+
 // Camera framing per route. The core sits right of centre so the home hero copy keeps the left.
-const SHOTS: Record<StageView, { position: Vec3; target: Vec3 }> = {
-  home: { position: [0, 1.6, 10], target: [0, 0.9, 0] },
-  games: { position: [-3, 5.5, 14], target: [1, 0.2, -4] },
+const SHOTS: Record<StageView, Shot> = {
+  home: { position: [0, 1.6, 10], target: [0, 0.9, 0], floor: [7, -6] },
+  games: { position: [-3, 5.5, 14], target: [1, 0.2, -4], floor: [7, -2] },
   // Detail pages are text-dense on both sides, so look away from the core toward open sky.
-  game: { position: [-6, 4, 10], target: [-10, 2.5, -14] },
-  data: { position: [-7, 2, 8], target: [-5, -1.5, -18] },
-  missing: { position: [0, 9, 12], target: [0, 0, -2] },
+  game: { position: [-6, 4, 10], target: [-10, 2.5, -14], floor: [-16, -44] },
+  // The data towers stand at z ≈ -20, so this view keeps the far floor.
+  data: { position: [-7, 2, 8], target: [-5, -1.5, -18], floor: [-16, -44] },
+  missing: { position: [0, 9, 12], target: [0, 0, -2], floor: [9, 2] },
 };
 
 const CORE: Vec3 = [3.6, 1.6, 0];
 // Portrait screens stack the hero copy under the visual, so centre the core and lift it.
-const PORTRAIT_SHOTS: Partial<Record<StageView, { position: Vec3; target: Vec3 }>> = {
-  home: { position: [CORE[0], 3.2, 14], target: [CORE[0], -0.6, 0] },
+const PORTRAIT_SHOTS: Partial<Record<StageView, Shot>> = {
+  home: { position: [CORE[0], 3.2, 14], target: [CORE[0], -0.6, 0], floor: [8, -2] },
 };
 const FLOOR_Y = -1.2;
-const GRID_SIZE = 60;
+const GRID_HALF_WIDTH = 30;
 const GRID_STEP = 2;
+const GRID_LINE_WIDTH = 0.025;
+const GRID_LINE_HEIGHT = 0.01;
+// Floor depth range (world z). The near edge stays below every camera's view.
+const GRID_NEAR = 10;
+const GRID_FAR = -46;
+// Spacing of the alpha samples along the z lines, which sets how smooth the fade is.
+const GRID_SAMPLE_STEP = 1;
 const STAR_COUNT = 700;
 const TOWER_SLOTS = 16;
 // Ambient motion reads fine at 24 fps; the display rate would more than double GPU work.
@@ -186,6 +204,53 @@ function arc(radius: number, from: number, to: number, segments: number): Vec3[]
   });
 }
 
+function floorAlpha(z: number, start: number, end: number): number {
+  const t = Math.min(1, Math.max(0, (z - end) / (start - end)));
+  return t * t * (3 - 2 * t);
+}
+
+interface FloorLine {
+  /** Floor-plane (x, z) points along the line. */
+  points: Array<[number, number]>;
+  /** Unit floor-plane direction across the line. */
+  across: [number, number];
+}
+
+// Each line point yields four vertices: the top strip's two edges, then the bottom and top
+// of a vertical fin. Without the fin, far lines seen at grazing angles thin below a pixel
+// and break into dashes.
+const FLOOR_VERTS_PER_POINT = 4;
+// Geometry vertices are 8 floats: position, normal, uv.
+const FLOATS_PER_VERTEX = 8;
+// z offsets of a cross line's per-point vertices, matching floorLines' layout.
+const CROSS_Z_OFFSETS = [-GRID_LINE_WIDTH / 2, GRID_LINE_WIDTH / 2, 0, 0];
+
+/** Floor grid lines with RGBA vertex colours, whose alpha fades their emission too. */
+function floorLines(lines: FloorLine[]): Geometry {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const colors: number[] = [];
+  const indices: number[] = [];
+  const half = GRID_LINE_WIDTH / 2;
+  const rise = GRID_LINE_HEIGHT / 2;
+  for (const { points, across } of lines) {
+    const [ax, az] = across;
+    points.forEach(([x, z], k) => {
+      const first = positions.length / 3;
+      positions.push(x - ax * half, rise, z - az * half, x + ax * half, rise, z + az * half, x, -rise, z, x, rise, z);
+      normals.push(0, 1, 0, 0, 1, 0, ax, 0, az, ax, 0, az);
+      uvs.push(0, 0, 0, 0, 0, 0, 0, 0);
+      for (let v = 0; v < FLOOR_VERTS_PER_POINT; v++) colors.push(1, 1, 1, 1);
+      if (k > 0) {
+        const prev = first - FLOOR_VERTS_PER_POINT;
+        indices.push(prev, prev + 1, first + 1, prev, first + 1, first, prev + 2, prev + 3, first + 3, prev + 2, first + 3, first + 2);
+      }
+    });
+  }
+  return new Geometry({ positions, normals, uvs, indices, colors });
+}
+
 class StageScene extends Scene {
   private readonly motion: boolean;
   private readonly pointerTarget = { x: 0, y: 0 };
@@ -193,7 +258,12 @@ class StageScene extends Scene {
   private readonly look = new Vector3();
   private readonly camGoal = new Vector3();
   private readonly lookGoal = new Vector3();
-  private readonly grid: Group;
+  private readonly alongLines: Geometry;
+  private readonly crossLines: Geometry;
+  /** Current floor fade [start, end]; eases toward the shot's, like the camera. */
+  private readonly floorFade: [number, number] = [0, 0];
+  /** Fade last written into alongLines, whose alpha only changes with the fade. */
+  private readonly alongFade: [number, number] = [Number.NaN, Number.NaN];
   private readonly stars: Group;
   private readonly core: Mesh;
   private readonly planets: Array<{ holder: Group; body: Mesh; trail: Group; radius: number; speed: number; phase: number; spin: number }> = [];
@@ -215,10 +285,10 @@ class StageScene extends Scene {
     const { white } = textures;
     this.motion = state.motion;
     this.view = state.view;
-    const glow = (emissive: RGB, opacity = 1): PBRMaterial => {
+    const glow = (emissive: RGB, opacity = 1, extra: Partial<PBRMaterialOptions> = {}): PBRMaterial => {
       const peak = Math.max(...emissive, 1e-6);
       const color: RGB = p.tintedSurfaces ? [(emissive[0] / peak) * 0.8, (emissive[1] / peak) * 0.8, (emissive[2] / peak) * 0.8] : p.base;
-      return new PBRMaterial({ texture: white, color, emissive, roughness: 0.6, ...(opacity < 1 ? { opacity, transparent: true, alphaMode: 'BLEND' as const } : {}) });
+      return new PBRMaterial({ texture: white, color, emissive, roughness: 0.6, ...(opacity < 1 ? { opacity, transparent: true, alphaMode: 'BLEND' as const } : {}), ...extra });
     };
 
     this.ambientLight = p.ambient;
@@ -244,17 +314,22 @@ class StageScene extends Scene {
 
     const { matrix: m, position: pos, rotation: rot, size } = this;
 
-    // Holographic floor grid: thin instanced bars that scroll toward the camera.
-    this.grid = this.add(new Group());
-    this.grid.position.y = FLOOR_Y;
-    const lines = Math.floor(GRID_SIZE / GRID_STEP) + 1;
-    const gridMesh = this.grid.add(new InstancedMesh({ geometry: Geometry.cube(1), material: glow(p.grid), count: lines * 2 }));
-    const gridCentreZ = 8 - GRID_SIZE / 2;
-    for (let i = 0; i < lines; i++) {
-      const offset = -GRID_SIZE / 2 + i * GRID_STEP;
-      gridMesh.setMatrixAt(i, m.compose(pos.set(offset, 0, gridCentreZ), rot, size.set(0.025, 0.01, GRID_SIZE)));
-      gridMesh.setMatrixAt(lines + i, m.compose(pos.set(0, 0, gridCentreZ + offset), rot, size.set(GRID_SIZE, 0.01, 0.025)));
-    }
+    // Holographic floor grid. Only the cross lines scroll toward the camera: moving the
+    // lines along z over themselves would be invisible.
+    const floor = this.add(new Group());
+    floor.position.y = FLOOR_Y;
+    const gridMaterial = glow(p.grid, 1, { transparent: true, alphaMode: 'BLEND', doubleSided: true });
+    const depths = Array.from({ length: (GRID_NEAR - GRID_FAR) / GRID_SAMPLE_STEP + 1 }, (_, i) => GRID_NEAR - i * GRID_SAMPLE_STEP);
+    const along = Array.from({ length: (2 * GRID_HALF_WIDTH) / GRID_STEP + 1 }, (_, i): FloorLine => {
+      const x = -GRID_HALF_WIDTH + i * GRID_STEP;
+      return { points: depths.map((z) => [x, z]), across: [1, 0] };
+    });
+    this.alongLines = floorLines(along);
+    floor.add(new Mesh({ geometry: this.alongLines, material: gridMaterial }));
+    // Cross line depth and every line's alpha are written by layoutFloor.
+    const cross = Array.from({ length: (GRID_NEAR - GRID_FAR) / GRID_STEP }, (): FloorLine => ({ points: [[-GRID_HALF_WIDTH, 0], [GRID_HALF_WIDTH, 0]], across: [0, 1] }));
+    this.crossLines = floorLines(cross);
+    floor.add(new Mesh({ geometry: this.crossLines, material: gridMaterial }));
 
     // Starfield dome, seeded so theme/data rebuilds do not reshuffle it.
     this.stars = this.add(new Group());
@@ -332,13 +407,16 @@ class StageScene extends Scene {
       this.look.copy(previous.look);
       this.time = previous.time;
       this.towerGrowth = previous.towerGrowth;
+      this.floorFade.splice(0, 2, ...previous.floorFade);
     } else {
       this.camera3D.position.set(...SHOTS[this.view].position);
       this.look.set(...SHOTS[this.view].target);
       this.towerGrowth = this.view === 'data' ? 1 : 0;
+      this.floorFade.splice(0, 2, ...SHOTS[this.view].floor);
     }
     this.camera3D.lookAt(this.look);
     this.layoutTowers();
+    this.layoutFloor();
     this.placePlanets();
   }
 
@@ -349,6 +427,34 @@ class StageScene extends Scene {
   setPointer(x: number, y: number): void {
     this.pointerTarget.x = x;
     this.pointerTarget.y = y;
+  }
+
+  private layoutFloor(): void {
+    const [start, end] = this.floorFade;
+    const scroll = (this.time * 0.8) % GRID_STEP;
+    const perLine = 2 * FLOOR_VERTS_PER_POINT;
+    const cross = this.crossLines;
+    const crossColors = cross.colors!;
+    for (let line = 0; line * perLine * FLOATS_PER_VERTEX < cross.vertices.length; line++) {
+      const z = GRID_FAR + line * GRID_STEP + scroll;
+      const alpha = floorAlpha(z, start, end);
+      for (let v = 0; v < perLine; v++) {
+        const vertex = line * perLine + v;
+        cross.vertices[vertex * FLOATS_PER_VERTEX + 2] = z + CROSS_Z_OFFSETS[v % FLOOR_VERTS_PER_POINT]!;
+        crossColors[vertex * 4 + 3] = alpha;
+      }
+    }
+    cross.markUpdated();
+
+    if (start === this.alongFade[0] && end === this.alongFade[1]) return;
+    const along = this.alongLines;
+    const alongColors = along.colors!;
+    for (let vertex = 0; vertex * FLOATS_PER_VERTEX < along.vertices.length; vertex++) {
+      alongColors[vertex * 4 + 3] = floorAlpha(along.vertices[vertex * FLOATS_PER_VERTEX + 2]!, start, end);
+    }
+    along.markUpdated();
+    this.alongFade[0] = start;
+    this.alongFade[1] = end;
   }
 
   private layoutTowers(): void {
@@ -398,9 +504,15 @@ class StageScene extends Scene {
     const look = this.look;
     look.set(look.x + (this.lookGoal.x - look.x) * ease, look.y + (this.lookGoal.y - look.y) * ease, look.z + (this.lookGoal.z - look.z) * ease);
     this.camera3D.lookAt(look);
+    // Settle exactly, so the z lines stop being rewritten once the fade arrives.
+    for (let i = 0; i < 2; i++) {
+      const goal = shot.floor[i]!;
+      const next = this.floorFade[i]! + (goal - this.floorFade[i]!) * ease;
+      this.floorFade[i] = Math.abs(goal - next) < 0.01 ? goal : next;
+    }
+    this.layoutFloor();
 
     if (animate) {
-      this.grid.position.z = (this.time * 0.8) % GRID_STEP;
       this.stars.rotation.setFromEuler(0, this.time * 0.01, 0);
       this.core.rotation.setFromEuler(0, this.time * 0.04, 0);
       this.placePlanets();
