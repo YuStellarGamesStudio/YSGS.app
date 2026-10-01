@@ -530,7 +530,7 @@ input {
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   align-items: center;
   gap: 2rem;
-  min-height: min(52svh, 28rem);
+  min-height: min(41svh, 22rem);
 }
 
 .hero h1 {
@@ -574,7 +574,7 @@ input {
 .hero-visual {
   position: relative;
   aspect-ratio: 1;
-  width: min(100%, 26rem);
+  width: min(100%, 22rem);
   justify-self: center;
   display: grid;
   place-items: center;
@@ -799,7 +799,7 @@ input {
   position: absolute;
   inset: 0;
   background: linear-gradient(to top, var(--surface-solid), transparent 45%);
-  opacity: 0.85;
+  opacity: 0.5;
 }
 
 .card-body {
