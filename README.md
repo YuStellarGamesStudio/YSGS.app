@@ -30,12 +30,14 @@
 | Vite | 本機開發、正式建置與產物預覽 |
 | npm | 相依套件與 lockfile 管理 |
 | GitHub Actions | 型別檢查、相依套件稽核、建置與部署 |
+| XYZ.js 1.7.0 | 3D 背景渲染；未發佈於 npm，套件已解壓於 `vendor/xyz.js/`，以 `file:` 相依安裝 |
 | GitHub Pages | 靜態網站發布目標 |
 
 ## 環境需求
 
 - 建議使用 **Node.js 24**，與 CI 的版本一致；版本設定位於 [`.node-version`](.node-version)。
 - 使用 npm 安裝相依套件；`package.json` 要求 Node.js 24 或以上。
+- `.npmrc` 設定 `install-links=true`，讓 `vendor/xyz.js` 以複製方式安裝，不會連帶安裝該套件的開發相依套件。XYZ.js 的 `package.json` 宣告 Node.js 26 以上，但它只在瀏覽器執行，Node.js 24 安裝時只會出現 engine 警告。
 - 使用 Git 取得專案。
 
 本專案不需要後端服務或自訂部署憑證。不要將私密金鑰或 Token 放入前端程式碼、環境變數產物或靜態檔案；發布後的前端資源可被下載。
@@ -108,6 +110,8 @@ src/
   vite-env.d.ts               # Vite 與環境變數型別宣告
 index.html                    # 網頁入口
 package.json                  # 相依套件與 npm 指令
+vendor/xyz.js/                # XYZ.js v1.7 發佈包（Apache-2.0，來源 SHA-256 已比對 SHA256SUMS）
+.npmrc                        # npm 設定（install-links）
 package-lock.json             # 鎖定相依套件版本
 tsconfig.json                 # TypeScript 設定
 .node-version                 # CI 使用的 Node.js 版本
