@@ -17,6 +17,9 @@ export interface StageState {
   motion: boolean;
   /** Render nothing at all, e.g. while a game covers the page. */
   paused: boolean;
+  /** Hold the current frame and draw only after a change, as under reduced motion,
+   *  e.g. while the window is visible but unfocused. */
+  idle: boolean;
 }
 export interface Stage {
   update(state: StageState): void;
@@ -459,7 +462,7 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
   await engine.setScene(current);
 
   // An ambient backdrop does not need the display's full refresh rate: render at
-  // most 30 fps, and under reduced motion only for a moment after something changes.
+  // most 24 fps, and under reduced motion or while idle only for a moment after something changes.
   // XYZ.js has no frame cap, so the engine is resumed for one frame at a time. Our
   // rAF callback is registered after the engine's, so it runs right after each
   // engine frame and pauses it again before the next one.
@@ -469,7 +472,8 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
   let failed = false;
   const tick = (now: number): void => {
     if (engine.state === 'running') engine.pause();
-    const due = !state.paused && (state.motion ? now >= nextFrame : now < wakeUntil);
+    const animating = state.motion && !state.idle;
+    const due = !state.paused && (animating ? now >= nextFrame : now < wakeUntil);
     if (due) {
       // Advance by the interval rather than from `now`, so on a 60 Hz display the gaps
       // alternate between 2 and 3 vsyncs and average out to the target rate.
@@ -485,7 +489,7 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
       }
     }
     // Paused: this tick has stopped the engine, so the loop ends until the next wake.
-    looping = (!state.paused && (state.motion || now < wakeUntil)) || engine.state === 'running';
+    looping = (!state.paused && (animating || now < wakeUntil)) || engine.state === 'running';
     if (looping) requestAnimationFrame(tick);
   };
   const wake = (): void => {

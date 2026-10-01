@@ -156,8 +156,11 @@ function stageState(route: Route): StageState {
     theme: state.theme,
     view: route.view === 'play' ? 'game' : route.view,
     motion: !reducedMotion.matches,
-    // A loaded game covers the whole viewport, so the stage stops drawing entirely.
-    paused: route.view === 'play' && gameLoaded,
+    // A loaded game covers the whole viewport, and a background tab shows nothing,
+    // so in both cases the stage stops drawing entirely.
+    paused: document.hidden || (route.view === 'play' && gameLoaded),
+    // An unfocused but visible window keeps its last frame instead of animating.
+    idle: !document.hasFocus(),
     data: { games: catalog?.games.length ?? 0, genres: catalog ? usedGenres(catalog).map(([, count]) => count) : [] },
   };
 }
@@ -719,6 +722,10 @@ window.addEventListener('keydown', (event) => {
   }
 });
 reducedMotion.addEventListener('change', () => stage?.update(stageState(parseRoute())));
+// rAF timing in background tabs is up to the browser; pausing ends the frame loop explicitly.
+document.addEventListener('visibilitychange', () => stage?.update(stageState(parseRoute())));
+window.addEventListener('focus', () => stage?.update(stageState(parseRoute())));
+window.addEventListener('blur', () => stage?.update(stageState(parseRoute())));
 window.addEventListener('pointermove', (event) => {
   if (!reducedMotion.matches) stage?.setPointer((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);
 });
