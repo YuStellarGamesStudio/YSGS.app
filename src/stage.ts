@@ -15,6 +15,8 @@ export interface StageState {
   view: StageView;
   data: StageData;
   motion: boolean;
+  /** Render nothing at all, e.g. while a game covers the page. */
+  paused: boolean;
 }
 export interface Stage {
   update(state: StageState): void;
@@ -467,7 +469,7 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
   let failed = false;
   const tick = (now: number): void => {
     if (engine.state === 'running') engine.pause();
-    const due = state.motion ? now >= nextFrame : now < wakeUntil;
+    const due = !state.paused && (state.motion ? now >= nextFrame : now < wakeUntil);
     if (due) {
       // Advance by the interval rather than from `now`, so on a 60 Hz display the gaps
       // alternate between 2 and 3 vsyncs and average out to the target rate.
@@ -482,7 +484,8 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
         return;
       }
     }
-    looping = state.motion || now < wakeUntil || engine.state === 'running';
+    // Paused: this tick has stopped the engine, so the loop ends until the next wake.
+    looping = (!state.paused && (state.motion || now < wakeUntil)) || engine.state === 'running';
     if (looping) requestAnimationFrame(tick);
   };
   const wake = (): void => {

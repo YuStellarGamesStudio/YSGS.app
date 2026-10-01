@@ -129,6 +129,8 @@ const footer = h('footer', { class: 'site-footer' }, h('div', { class: 'footer-i
 
 const stageCanvas = h('canvas', { class: 'stage', 'aria-hidden': 'true' });
 let stage: Stage | null = null;
+// Set once the current player frame fires `load`; the stage stops rendering from then on.
+let gameLoaded = false;
 
 app.replaceChildren(stageCanvas, skipLink, header, main, footer);
 
@@ -137,8 +139,9 @@ function stageState(route: Route): StageState {
   return {
     theme: state.theme,
     view: route.view === 'play' ? 'game' : route.view,
-    // The stage is hidden behind a running game, so stop animating it.
-    motion: !reducedMotion.matches && route.view !== 'play',
+    motion: !reducedMotion.matches,
+    // A loaded game covers the whole viewport, so the stage stops drawing entirely.
+    paused: route.view === 'play' && gameLoaded,
     data: { games: catalog?.games.length ?? 0, genres: catalog ? usedGenres(catalog).map(([, count]) => count) : [] },
   };
 }
@@ -383,17 +386,23 @@ function renderPlay(catalog: Catalog | null, id: string): Node[] {
   if (!catalog) return [statusPanel()];
   const game = catalog.games.find((candidate) => candidate.id === id);
   if (!game) return renderMissing();
+  const frame = h('iframe', {
+    class: 'player-frame',
+    src: game.launchUrls[state.locale] ?? game.url,
+    title: gameText(game, state.locale).name,
+    allow: 'fullscreen; autoplay; gamepad; clipboard-write',
+    allowfullscreen: true,
+  });
+  gameLoaded = false;
+  frame.addEventListener('load', () => {
+    gameLoaded = true;
+    stage?.update(stageState(parseRoute()));
+  });
   return [
     h(
       'div',
       { class: 'player' },
-      h('iframe', {
-        class: 'player-frame',
-        src: game.launchUrls[state.locale] ?? game.url,
-        title: gameText(game, state.locale).name,
-        allow: 'fullscreen; autoplay; gamepad; clipboard-write',
-        allowfullscreen: true,
-      }),
+      frame,
       h('a', { href: `#/games/${encodeURIComponent(game.id)}`, class: 'player-exit', title: t.exitGame, 'aria-label': t.exitGame }, icon('back')),
     ),
   ];
