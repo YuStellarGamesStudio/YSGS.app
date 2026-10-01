@@ -22,19 +22,21 @@ Requirements apply when the relevant feature or infrastructure exists. Sections 
 
 ## 2. Current Baseline and Unverified Items
 
-At the time of this initial policy, the repository contains domain and publishing-related marker files (`CNAME` and `.nojekyll`), a license, and project instruction documents. No website application code, dependency manifest, application test suite, or deployment workflow is present in the inspected repository root.
+The repository contains a Vite website written in native TypeScript, strict TypeScript configuration, an npm lockfile, and GitHub Actions definitions for CI and Pages deployment. The initial homepage does not implement accounts, backend endpoints, uploads, or user data storage. Domain and publishing-related marker files (`CNAME` and `.nojekyll`) are copied from the repository root into the `dist` build output.
 
 The `CNAME` file records `ysgs.app`. This does not establish ownership of every associated service, prove that the site is deployed, or authorize scanning. The presence of `.nojekyll` does not prove the active hosting configuration.
 
 The following remain unverified:
 
-- The live site's hosting provider, deployment process, and deployed revision.
+- The live site's hosting configuration, whether the committed GitHub Actions workflows have been enabled or executed successfully, and the deployed revision.
 - DNS records, domain renewal controls, HTTPS enforcement, and certificate status.
 - HTTP response headers, redirects, caching behavior, and third-party resources.
 - Whether GitHub private vulnerability reporting is enabled for this repository.
-- Repository access controls, branch protections, and automated security tooling.
+- Repository access controls, branch protections, deployment environment protections, and any security tooling beyond the committed workflow definitions.
 
-No completed security scan, penetration test, or remediation verification is recorded in this policy. These are unknowns, not confirmed vulnerabilities. Update this baseline as implementation and verifiable evidence become available.
+Local verification on 2026-10-01 completed `npm ci` and `npm run check` using Node.js 24.21.0. Type checking and production building passed, and npm audit reported zero known dependency vulnerabilities at that time. Actionlint 1.7.12 accepted both workflow definitions. The built homepage was exercised in local Chromium at desktop and mobile viewport sizes, including its TypeScript behavior and published marker files.
+
+These checks do not establish the absence of vulnerabilities or prove a successful GitHub Pages deployment. No live website security scan or penetration test was performed. Registry advisory coverage and the local environment limit the conclusions that can be drawn; re-evaluate the baseline as the website changes.
 
 ## 3. Scope and Supported Versions
 
@@ -227,7 +229,7 @@ When dependencies or build tooling are introduced:
 - Validate security updates through relevant behavior checks rather than relying only on an audit count.
 - Document exceptions with a reason, compensating controls, an owner, and a review condition. Avoid indefinite blanket suppression.
 
-No specific dependency scanner, scheduled audit, software bill of materials, or automated update service is currently claimed to be configured.
+The committed CI workflow runs `npm audit --audit-level=high` against the locked dependency tree, including development dependencies. High or critical advisories, audit service failures, type-check failures, and build failures block that workflow and its dependent Pages deployment. Lower-severity advisories do not fail this audit threshold and still require assessment. npm audit relies on registry advisory data and does not replace source review or establish website exploitability. No scheduled audit, software bill of materials, or automated dependency update service is configured in this repository.
 
 ## 8. Repository, CI/CD, Hosting, and Domain Security
 
@@ -242,7 +244,18 @@ No specific dependency scanner, scheduled audit, software bill of materials, or 
 
 ### 8.2 Automated workflows
 
-When automation is added:
+The committed workflows use the following build and deployment model:
+
+- `.github/workflows/ci.yml` runs on pull requests targeting `main`, manual dispatch, and reusable workflow calls. It uses Node.js 24, `npm ci`, strict TypeScript checking, dependency auditing, and a Vite production build.
+- `.github/workflows/pages.yml` runs on pushes to `main` or manual dispatch. Its jobs are gated to `main`, and it calls the same CI workflow to produce the Pages artifact rather than rebuilding after validation.
+- Only the deployment job receives `pages: write` and `id-token: write`; the build uses `contents: read`. Checkout does not persist repository credentials. No custom deployment secret is required by these workflow definitions.
+- The deployment depends on successful CI and publishes only `dist`, including the existing domain marker files, through GitHub's official Pages artifact and deployment actions.
+- Actions are pinned to resolved commit SHAs. The deployment targets the `github-pages` environment, with concurrency configured not to interrupt an active Pages run.
+- No `pull_request_target` workflow or privileged pull-request deployment is defined.
+
+These are source-level configuration facts, not proof of a successful GitHub-hosted run. Repository owners must select **GitHub Actions** as the Pages publishing source and verify the custom domain, HTTPS, environment rules, and branch protections separately.
+
+When changing automation:
 
 - Grant workflow tokens and deployment credentials the minimum required permissions.
 - Keep secrets and privileged execution unavailable to untrusted pull-request code.
