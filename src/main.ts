@@ -162,11 +162,45 @@ function stageState(route: Route): StageState {
   };
 }
 
+// Crawlers render the SPA, so each view publishes its own title, description and
+// canonical URL. The player is canonicalised to the game's detail page.
+function pageMeta(route: Route): { title: string; description: string; href: string; index: boolean } {
+  const brand = t.brand;
+  if (route.view === 'game' || route.view === 'play') {
+    const game = state.catalog?.games.find((candidate) => candidate.id === route.id);
+    const href = gameHref(route.id);
+    if (!game) return { title: t.pageTitle, description: t.metaDescription, href, index: !state.catalog };
+    const text = gameText(game, state.locale);
+    return { title: `${text.name} — ${brand}`, description: text.description, href, index: true };
+  }
+  if (route.view === 'games') return { title: `${t.libraryTitle} — ${brand}`, description: t.metaDescription, href: HREF.games, index: true };
+  if (route.view === 'data') return { title: `${t.dataTitle} — ${brand}`, description: t.dataLead, href: HREF.data, index: true };
+  if (route.view === 'missing') return { title: `${t.notFound} — ${brand}`, description: t.metaDescription, href: location.href, index: false };
+  return { title: t.pageTitle, description: t.metaDescription, href: HREF.home, index: true };
+}
+
+function setMeta(selector: string, content: string): void {
+  document.head.querySelector(selector)?.setAttribute('content', content);
+}
+
+const canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+const robots = h('meta', { name: 'robots', content: 'noindex' });
+
 function updateChrome(route: Route): void {
   const root = document.documentElement;
   root.lang = localeMeta[state.locale].htmlLang;
-  document.title = t.pageTitle;
-  document.querySelector('meta[name="description"]')?.setAttribute('content', t.metaDescription);
+  const meta = pageMeta(route);
+  const url = new URL(meta.href, location.origin).href;
+  document.title = meta.title;
+  canonical?.setAttribute('href', url);
+  setMeta('meta[name="description"]', meta.description);
+  setMeta('meta[property="og:title"]', meta.title);
+  setMeta('meta[property="og:description"]', meta.description);
+  setMeta('meta[property="og:url"]', url);
+  setMeta('meta[name="twitter:title"]', meta.title);
+  setMeta('meta[name="twitter:description"]', meta.description);
+  if (meta.index) robots.remove();
+  else document.head.append(robots);
   skipLink.textContent = t.skipToContent;
   brandName.textContent = t.brand;
   brand.setAttribute('aria-label', t.navHome);

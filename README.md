@@ -17,6 +17,7 @@
 | `?play=<id>` | 遊玩：以全畫面 iframe 在本站內開啟遊戲，左上角按鈕（或焦點不在遊戲內時按 Esc）返回詳細頁；遊戲載入完成後 3D 背景完全停止渲染，離開後恢復 |
 | `?view=data` | 資料主控台：統計、分類分布圖、在地化矩陣、標籤雲、分類字典與實際請求的網路紀錄 |
 
+- SEO：每個頁面會更新自己的 `<title>`、描述、canonical 與 Open Graph／Twitter 標籤；遊玩頁的 canonical 指向該遊戲的詳細頁，不存在的頁面或遊戲加上 `noindex`。
 
 - 語系：預設英文，可切換繁體中文、日文；選擇會存於 `localStorage`。「開始遊玩」優先使用遊戲資料的 `launchUrls[目前語系]`，沒有時使用 `url`。
 - 風格：提供深色與淺色兩種風格；首次造訪依系統偏好，選擇會存於 `localStorage`。
@@ -102,9 +103,9 @@ public/
   favicon.ico                  # 16／32／48 px 網站圖示
   og-image.png                 # 1200×630 Open Graph 分享圖
   robots.txt                   # 允許所有爬蟲並指向 sitemap
-  sitemap.xml                  # 首頁、遊戲庫與資料主控台
 scripts/
   copy-pages-files.mjs         # 將根目錄標記檔案複製到 dist
+  write-sitemap.mjs            # 建置時讀取 GameCatalog，產生 dist/sitemap.xml（首頁、遊戲庫、資料主控台與每款已發布遊戲的詳細頁；讀不到目錄時只列固定頁面）
 src/
   main.ts                     # 應用程式殼層、路由與各頁面
   i18n.ts                     # 英文、繁體中文、日文介面文字
