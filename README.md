@@ -94,6 +94,8 @@ design/
   og-image.svg                 # 分享圖原始檔（修改後重新輸出成 public/og-image.png）
 public/
   og-image.png                 # 1200×630 Open Graph 分享圖
+  robots.txt                   # 允許所有爬蟲並指向 sitemap
+  sitemap.xml                  # 只列首頁；hash 路由（#/…）無法個別收錄
 scripts/
   copy-pages-files.mjs         # 將根目錄標記檔案複製到 dist
 src/
