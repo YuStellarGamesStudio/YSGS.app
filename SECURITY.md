@@ -207,6 +207,10 @@ For the actual hosting environment:
 
 Verify which headers the hosting platform can actually set. HTML metadata does not replace transport-level controls; for example, HSTS requires an HTTP response header. Do not claim that adding a source file has configured a control unless the deployment platform consumes it and the delivered response confirms it.
 
+The game player uses a sandbox permitting only scripts, same-origin storage for cross-origin games, and pointer lock. Same-origin launch URLs do not receive `allow-same-origin`, so embedded scripts cannot remove their sandbox through parent DOM access. Top-level navigation, popups, form submission, and downloads are not granted. Local headless Chromium verification confirmed that a cross-origin fixture executed scripts and used localStorage while a clicked top-level navigation did not replace the host page. This does not verify compatibility with every published game.
+
+The README documents a Cloudflare response-header rule scoped to `ysgs.app` for `Content-Security-Policy: frame-ancestors 'none';` and `X-Frame-Options: DENY`. GitHub Pages does not consume a repository `_headers` file for this purpose. These response-header protections require deployment by a Cloudflare administrator; they have not been applied or verified by this source change.
+
 ### 6.5 Third-party content and privacy
 
 - Inventory external scripts, styles, fonts, embeds, analytics, and browser-side API integrations.

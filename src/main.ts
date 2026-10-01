@@ -445,9 +445,15 @@ function renderPlay(catalog: Catalog | null, id: string): Node[] {
   if (!catalog) return [statusPanel()];
   const game = catalog.games.find((candidate) => candidate.id === id);
   if (!game) return renderMissing();
+  const launchUrl = game.launchUrls[state.locale] ?? game.url;
+  // Same-origin scripts must not be able to remove their own sandbox.
+  const sandbox = new URL(launchUrl).origin === location.origin
+    ? 'allow-scripts allow-pointer-lock'
+    : 'allow-scripts allow-same-origin allow-pointer-lock';
   const frame = h('iframe', {
     class: 'player-frame',
-    src: game.launchUrls[state.locale] ?? game.url,
+    src: launchUrl,
+    sandbox,
     title: gameText(game, state.locale).name,
     allow: 'fullscreen; autoplay; gamepad; clipboard-write',
     allowfullscreen: true,

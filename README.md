@@ -190,6 +190,21 @@ LICENSE                       # 授權條款
 
 目前使用 Vite 預設的 `/` 資源基底路徑，適合 `https://ysgs.app/` 這類根網域部署。若改成 GitHub 的 `/YSGS.app/` 專案子路徑，必須先調整 Vite 的 `base` 設定並重新建置，避免 JavaScript 和 CSS 載入失敗。
 
+### 遊戲隔離與防嵌入 headers
+
+遊戲 iframe 的 sandbox 僅允許 `allow-scripts allow-same-origin allow-pointer-lock`：保留遊戲執行、原來源儲存與滑鼠鎖定，不開放頂層導覽、彈窗、表單提交或下載。同來源遊戲不授予 `allow-same-origin`，避免 scripts 移除自身 sandbox；需要儲存功能的遊戲應部署於獨立來源。Fullscreen、autoplay 等仍由 iframe 的 Permissions Policy 控制，不需要額外 sandbox token。
+
+GitHub Pages 不支援由此倉庫設定自訂 HTTP response headers；`_headers` 或 HTML meta 無法實作 `frame-ancestors`。在代理 `ysgs.app` 的 Cloudflare zone 建立 **Response Header Transform Rule**：
+
+- 條件：`http.host eq "ysgs.app"`（不要套用到遊戲來源或其他子網域）。
+- **Set static** `Content-Security-Policy` 為 `frame-ancestors 'none';`。
+- **Set static** `X-Frame-Options` 為 `DENY`。
+- 若已有 CSP，保留原有 directives 並合併 `frame-ancestors 'none'`，不要覆蓋其他保護。確認後續規則不會移除這兩個 headers。
+
+這些規則禁止其他網站嵌入本站，不影響本站嵌入外部遊戲。需要 Cloudflare 管理權限才能啟用，修改倉庫不代表已部署。啟用後以 `curl -sS -D - -o /dev/null https://ysgs.app/` 確認 headers，並在不同來源的頁面測試嵌入被瀏覽器拒絕。
+
+官方文件：[Cloudflare Response Header Transform Rules](https://developers.cloudflare.com/rules/transform/response-header-modification/)。
+
 官方文件：
 
 - [設定 GitHub Pages 發布來源](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
