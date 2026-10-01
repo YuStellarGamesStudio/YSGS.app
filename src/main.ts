@@ -330,6 +330,23 @@ function statTile(label: string, value: number, accent = false): HTMLElement {
 
 // ---------- Views ----------
 
+// Picked once per loaded catalog so switching language or theme does not reshuffle the homepage.
+const featuredCache = new WeakMap<Catalog, Catalog['games']>();
+function featuredGames(catalog: Catalog): Catalog['games'] {
+  let picked = featuredCache.get(catalog);
+  if (!picked) {
+    const pool = [...catalog.games];
+    picked = [];
+    // Draw without replacement: distinct games, in random order.
+    while (picked.length < 6 && pool.length > 0) {
+      const [game] = pool.splice(Math.floor(Math.random() * pool.length), 1);
+      if (game) picked.push(game);
+    }
+    featuredCache.set(catalog, picked);
+  }
+  return picked;
+}
+
 function renderHome(catalog: Catalog | null): Node[] {
   const hero = h(
     'section',
@@ -348,7 +365,7 @@ function renderHome(catalog: Catalog | null): Node[] {
   if (!catalog) return [hero, statusPanel()];
 
   const stats = h('section', { class: 'stat-strip' }, statTile(t.statGames, catalog.games.length, true), statTile(t.statGenres, usedGenres(catalog).length), statTile(t.statLanguages, locales.length));
-  const featured = catalog.games.slice(0, 6);
+  const featured = featuredGames(catalog);
   const library = h(
     'section',
     { class: 'section' },
