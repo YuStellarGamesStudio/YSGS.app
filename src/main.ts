@@ -92,11 +92,13 @@ function categoryName(key: string): string {
 // ---------- Routing ----------
 
 function parseRoute(): Route {
+  // Playing lives in the query (`?play=<id>`), every other view in the hash.
+  const play = new URLSearchParams(location.search).get('play');
+  if (play) return { view: 'play', id: play };
   const [section = '', id, extra] = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
   if (extra !== undefined) return { view: 'missing' };
   if (section === '' && id === undefined) return { view: 'home' };
   if (section === 'games') return id ? { view: 'game', id } : { view: 'games' };
-  if (section === 'play' && id) return { view: 'play', id };
   if (section === 'data' && id === undefined) return { view: 'data' };
   return { view: 'missing' };
 }
@@ -206,8 +208,18 @@ function coverImage(game: Game, className: string): HTMLElement {
   return frame;
 }
 
+/** Detail-page URL without any query, so it also leaves the `?play=` view. */
+function gameHref(id: string): string {
+  return `${location.pathname}#/games/${encodeURIComponent(id)}`;
+}
+
+function navigate(href: string): void {
+  history.pushState(null, '', href);
+  render(true);
+}
+
 function playButton(game: Game): HTMLAnchorElement {
-  return h('a', { href: `#/play/${encodeURIComponent(game.id)}`, class: 'btn btn-primary' }, icon('play'), t.play);
+  return h('a', { href: `?play=${encodeURIComponent(game.id)}`, class: 'btn btn-primary' }, icon('play'), t.play);
 }
 
 function gameCard(game: Game): HTMLElement {
@@ -403,7 +415,7 @@ function renderPlay(catalog: Catalog | null, id: string): Node[] {
       'div',
       { class: 'player' },
       frame,
-      h('a', { href: `#/games/${encodeURIComponent(game.id)}`, class: 'player-exit', title: t.exitGame, 'aria-label': t.exitGame }, icon('back')),
+      h('a', { href: gameHref(game.id), class: 'player-exit', title: t.exitGame, 'aria-label': t.exitGame }, icon('back')),
     ),
   ];
 }
@@ -624,11 +636,23 @@ skipLink.addEventListener('click', (event) => {
   event.preventDefault();
   main.focus();
 });
-window.addEventListener('hashchange', () => render(true));
+// Links that only change the query (entering or leaving `?play=`) are handled in-page
+// with the History API instead of reloading the document.
+document.addEventListener('click', (event) => {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const link = (event.target as Element).closest<HTMLAnchorElement>('a[href]');
+  if (!link || link.target) return;
+  const url = new URL(link.href);
+  if (url.origin !== location.origin || url.pathname !== location.pathname || url.search === location.search) return;
+  event.preventDefault();
+  navigate(url.href);
+});
+// Fires for hash links and programmatic hash changes as well as Back/Forward.
+window.addEventListener('popstate', () => render(true));
 window.addEventListener('keydown', (event) => {
   // Only reaches us while focus is outside the game frame, e.g. on the exit button.
   const route = parseRoute();
-  if (event.key === 'Escape' && route.view === 'play') location.hash = `#/games/${encodeURIComponent(route.id)}`;
+  if (event.key === 'Escape' && route.view === 'play') navigate(gameHref(route.id));
 });
 reducedMotion.addEventListener('change', () => stage?.update(stageState(parseRoute())));
 window.addEventListener('pointermove', (event) => {
