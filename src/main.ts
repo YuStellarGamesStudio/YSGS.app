@@ -453,14 +453,29 @@ function renderPlay(catalog: Catalog | null, id: string): Node[] {
     gameLoaded = true;
     stage?.update(stageState(parseRoute()));
   });
-  return [
+  // Exiting asks first: the exit button sits over the game, so a stray tap would
+  // otherwise drop unsaved progress.
+  const stay = h('button', { type: 'button', class: 'btn btn-ghost' }, t.exitCancel);
+  const dialog = h(
+    'dialog',
+    { class: 'exit-dialog', 'aria-labelledby': 'exit-title', 'aria-describedby': 'exit-body' },
+    // The panel carries the padding, so only real backdrop clicks hit the dialog itself.
     h(
       'div',
-      { class: 'player' },
-      frame,
-      h('a', { href: gameHref(game.id), class: 'player-exit', title: t.exitGame, 'aria-label': t.exitGame }, icon('back')),
+      { class: 'exit-panel' },
+      h('h2', { id: 'exit-title' }, t.exitTitle),
+      h('p', { id: 'exit-body' }, t.exitBody),
+      // "Keep playing" comes first so it takes the initial focus.
+      h('div', { class: 'exit-actions' }, stay, h('a', { href: gameHref(game.id), class: 'btn btn-primary' }, t.exitConfirm)),
     ),
-  ];
+  );
+  stay.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  const exit = h('button', { type: 'button', class: 'player-exit', title: t.exitGame, 'aria-label': t.exitGame, 'aria-haspopup': 'dialog' }, icon('back'));
+  exit.addEventListener('click', () => dialog.showModal());
+  return [h('div', { class: 'player' }, frame, exit, dialog)];
 }
 
 function renderData(catalog: Catalog | null): Node[] {
@@ -694,7 +709,13 @@ window.addEventListener('popstate', () => render(true));
 window.addEventListener('keydown', (event) => {
   // Only reaches us while focus is outside the game frame, e.g. on the exit button.
   const route = parseRoute();
-  if (event.key === 'Escape' && route.view === 'play') navigate(gameHref(route.id));
+  // Esc opens the confirmation; while it is open, the dialog handles Esc as "keep playing".
+  const dialog = main.querySelector<HTMLDialogElement>('.exit-dialog');
+  if (event.key === 'Escape' && route.view === 'play' && dialog && !dialog.open) {
+    // Otherwise this same keypress becomes a close request and cancels the new dialog.
+    event.preventDefault();
+    dialog.showModal();
+  }
 });
 reducedMotion.addEventListener('change', () => stage?.update(stageState(parseRoute())));
 window.addEventListener('pointermove', (event) => {

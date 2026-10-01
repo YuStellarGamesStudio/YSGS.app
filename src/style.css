@@ -1422,7 +1422,10 @@ html:has(.view-play) {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
+  padding: 0;
+  border: 0;
   background: rgb(0 0 0 / 0.55);
+  cursor: pointer;
   color: #fff;
   opacity: 0.6;
   transition: opacity 0.2s var(--ease);
@@ -1431,6 +1434,41 @@ html:has(.view-play) {
 .player-exit:hover,
 .player-exit:focus-visible {
   opacity: 1;
+}
+
+.exit-dialog {
+  width: min(26rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-solid);
+  color: var(--text);
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+}
+
+.exit-dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
+.exit-panel {
+  padding: 1.5rem;
+}
+
+.exit-panel h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.2rem;
+}
+
+.exit-panel p {
+  margin: 0 0 1.4rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.exit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
