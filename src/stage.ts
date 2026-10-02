@@ -3,7 +3,7 @@ import type { PBRMaterialOptions } from 'xyz.js';
 import { buildShip } from './stage-ship';
 import type { Ship } from './stage-ship';
 import type { Painter } from './stage-textures';
-import { coronaTexture, hullTexture, nebulaTexture, paintCloudy, paintGiant, paintIce, paintOcean, paintRinged, paintRocky, paintRust, paintStar, radiatorTexture, ringTexture, sphereTexture } from './stage-textures';
+import { bracketTexture, coronaTexture, hullTexture, nebulaTexture, paintCloudy, paintGiant, paintIce, paintOcean, paintRinged, paintRocky, paintRust, paintStar, radiatorTexture, ringTexture, sphereTexture } from './stage-textures';
 
 export type StageTheme = 'dark' | 'light';
 export type StageView = 'home' | 'games' | 'game' | 'data' | 'missing';
@@ -188,6 +188,12 @@ const DUST_MIN: Vec3 = [-16, -1, -30];
 const DUST_MAX: Vec3 = [16, 9, 6];
 /** Dust grows in and fades out over this distance at either end of its drift. */
 const DUST_FADE = 4;
+// Target lock: HUD brackets hop to another planet each period, zooming in and blinking while
+// they acquire, then holding until shortly before the next hop.
+const LOCK_PERIOD = 4.5;
+const LOCK_ACQUIRE = 0.5;
+const LOCK_HOLD = 3.9;
+const LOCK_MARGIN = 0.1;
 // Ambient motion reads fine at 24 fps; the display rate would more than double GPU work.
 const FRAME_INTERVAL_MS = 1000 / 24;
 // How long a still (reduced-motion) stage keeps rendering after a change.
@@ -233,6 +239,7 @@ export interface StageTextures {
   planets: Texture[];
   hull: Texture;
   radiator: Texture;
+  bracket: Texture;
 }
 
 function scaled(color: RGB, factor: number): RGB {
@@ -246,6 +253,14 @@ function mulberry32(seed: number): () => number {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+/** Deterministic value in [0, 1) for an integer, so timed effects can be shown at any time. */
+function hash01(n: number): number {
+  let h = Math.imul(n ^ 0x5bd1e995, 0x27d4eb2d);
+  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
 function circle(radius: number, segments: number): Vec3[] {
@@ -351,6 +366,9 @@ class StageScene extends Scene {
   /** Per dust particle: x, y, z offset into its drift, and radius. */
   private readonly dustSeeds = new Float32Array(DUST_COUNT * 4);
   private readonly towerHeights: number[];
+  private readonly lock: Billboard;
+  private readonly lockSize: number[];
+  private readonly systemMatrix: Matrix4;
   // Scratch values reused every frame to avoid per-frame allocation.
   private readonly matrix = new Matrix4();
   private readonly position = new Vector3();
@@ -359,6 +377,9 @@ class StageScene extends Scene {
   private time = 0;
   private lastTick = 0;
   private towerGrowth = 0;
+  /** Lock cycle last shown and the planet it targets; each new cycle hops to another planet. */
+  private lockCycle = 0;
+  private lockTarget = 0;
   private view: StageView;
 
   constructor(textures: StageTextures, state: StageState, previous?: StageScene) {
@@ -449,6 +470,7 @@ class StageScene extends Scene {
     const system = this.add(new Group());
     system.position.set(...CORE);
     system.rotation.setFromEuler(0.38, 0, -0.16);
+    this.systemMatrix = system.transform.updateMatrix();
     this.core = system.add(
       new Mesh({
         geometry: Geometry.sphere(STAR_RADIUS, 48, 24),
@@ -540,6 +562,16 @@ class StageScene extends Scene {
     ];
     for (const [from, to, color] of scannerArcs) this.scanner.add(new Line3D(arc(SCANNER_RADIUS - 0.07, from, to, 24), { material: glow(color), width: 0.03 }));
 
+    // Target-lock brackets, framing a planet with a margin so small worlds still read. A
+    // billboard ignores parent rotation, so it lives in the scene root.
+    this.lock = this.add(
+      new Billboard({
+        material: new PBRMaterial({ texture: textures.bracket, color: [0, 0, 0], emissive: p.cyan, emissiveTexture: textures.bracket, transparent: true, alphaMode: 'BLEND' }),
+        visible: count > 0,
+      }),
+    );
+    this.lockSize = this.planets.map((_, i) => PLANETS[i % PLANETS.length]!.radius * 2 * (PLANETS[i % PLANETS.length]!.ring ? 2.3 : 1) + LOCK_MARGIN * 2);
+
     // Asteroid belt in the gap between the rocky worlds and the giants.
     if (count > 4) {
       const radius = ORBIT_INNER + ((ORBIT_OUTER - ORBIT_INNER) * 3.5) / (count - 1);
@@ -599,6 +631,8 @@ class StageScene extends Scene {
       this.time = previous.time;
       this.towerGrowth = previous.towerGrowth;
       this.floorFade.splice(0, 2, ...previous.floorFade);
+      this.lockCycle = previous.lockCycle;
+      this.lockTarget = previous.lockTarget % Math.max(1, state.data.games);
     } else {
       this.camera3D.position.set(...SHOTS[this.view].position);
       this.look.set(...SHOTS[this.view].target);
@@ -609,6 +643,7 @@ class StageScene extends Scene {
     this.layoutTowers();
     this.layoutFloor();
     this.placePlanets();
+    this.placeLock();
     this.placeShip();
     this.layoutDust();
   }
@@ -680,6 +715,31 @@ class StageScene extends Scene {
     }
   }
 
+  private placeLock(): void {
+    const count = this.planets.length;
+    if (!count) return;
+    // Under reduced motion the brackets hold steady on the innermost planet.
+    const cycle = this.motion ? Math.floor(this.time / LOCK_PERIOD) : 0;
+    const age = this.motion ? this.time - cycle * LOCK_PERIOD : LOCK_ACQUIRE;
+    if (this.motion && cycle !== this.lockCycle) {
+      // Step 1 to count - 1 planets ahead, so the hop never stays put but looks unplanned.
+      this.lockCycle = cycle;
+      this.lockTarget = (this.lockTarget + 1 + Math.floor(hash01(cycle) * (count - 1))) % count;
+    }
+    const target = this.motion ? this.lockTarget : 0;
+    const acquiring = age < LOCK_ACQUIRE;
+    this.lock.visible = age < LOCK_HOLD && (!acquiring || Math.floor(age * 16) % 2 === 0);
+    if (!this.lock.visible) return;
+    const planet = this.planets[target]!;
+    const point = this.position;
+    planet.orbit.transformPoint(point.copy(planet.holder.position), point);
+    this.systemMatrix.transformPoint(point, point);
+    this.lock.position.copy(point);
+    const zoom = acquiring ? 1 + 2 * (1 - age / LOCK_ACQUIRE) ** 3 : 1;
+    const size = this.lockSize[target]! * zoom;
+    this.lock.scale.set(size, size, size);
+  }
+
   private placeShip(): void {
     // Cruise along the heading, from SHIP_RANGE behind the start point to SHIP_RANGE past it.
     const travel = ((this.time * SHIP_SPEED + SHIP_RANGE) % (2 * SHIP_RANGE)) - SHIP_RANGE;
@@ -742,6 +802,7 @@ class StageScene extends Scene {
       this.placeShip();
       this.layoutDust();
       this.placePlanets();
+      this.placeLock();
     }
 
     const growthGoal = this.view === 'data' ? 1 : 0;
@@ -797,7 +858,8 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
   for (const kind of PLANETS) planets.push(await sphereTexture(kind.paint, kind.map));
   const hull = await hullTexture();
   const radiator = await radiatorTexture();
-  const textures: StageTextures = { white, star, ring, corona, nebulae, planets, hull, radiator };
+  const bracket = await bracketTexture();
+  const textures: StageTextures = { white, star, ring, corona, nebulae, planets, hull, radiator, bracket };
 
   let state = initial;
   let current = new StageScene(textures, state);

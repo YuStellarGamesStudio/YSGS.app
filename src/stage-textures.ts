@@ -127,6 +127,35 @@ export function coronaTexture(limb: number, size = 256): Promise<Texture> {
   return Texture.fromImage(canvas);
 }
 
+/** HUD target-lock reticle: four bright corner brackets around a faint dashed ring; white, tinted by the material. */
+export function bracketTexture(size = 128): Promise<Texture> {
+  const canvas = new OffscreenCanvas(size, size);
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('2D canvas context unavailable');
+  const half = size / 2;
+  const inset = size * 0.08;
+  const reach = size * 0.22;
+  context.strokeStyle = '#fff';
+  context.lineWidth = size * 0.045;
+  context.lineCap = 'square';
+  for (const [x, y] of [[inset, inset], [size - inset, inset], [inset, size - inset], [size - inset, size - inset]] as const) {
+    const dx = x < half ? reach : -reach;
+    const dy = y < half ? reach : -reach;
+    context.beginPath();
+    context.moveTo(x + dx, y);
+    context.lineTo(x, y);
+    context.lineTo(x, y + dy);
+    context.stroke();
+  }
+  context.globalAlpha = 0.45;
+  context.lineWidth = size * 0.018;
+  context.setLineDash([size * 0.035, size * 0.05]);
+  context.beginPath();
+  context.arc(half, half, size * 0.3, 0, Math.PI * 2);
+  context.stroke();
+  return Texture.fromImage(canvas);
+}
+
 /** Soft gas cloud for a camera-facing nebula: white with a noisy, radially fading alpha, tinted by the material. */
 export function nebulaTexture(seed: number, size = 256): Promise<Texture> {
   const canvas = new OffscreenCanvas(size, size);
