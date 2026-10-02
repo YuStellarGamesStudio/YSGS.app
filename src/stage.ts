@@ -276,6 +276,11 @@ const PLATE_DROP = 0.9;
 const PLATE_RINGS = [1, 2, 3, 3.7];
 const PLATE_SPOKES = 12;
 const FOOT_RADIUS = 0.05;
+// A trailing radar wedge rotates over the reference plate and lights up planet foot markers.
+const SWEEP_SPEED = 0.9;
+const SWEEP_SPAN = 1.1;
+const SWEEP_STEPS = 24;
+const SWEEP_FLARE = 1.8;
 
 export interface StageTextures {
   white: Texture;
@@ -368,6 +373,24 @@ const FLOATS_PER_VERTEX = 8;
 // z offsets of a cross line's per-point vertices, matching floorLines' layout.
 const CROSS_Z_OFFSETS = [-GRID_LINE_WIDTH / 2, GRID_LINE_WIDTH / 2, 0, 0];
 
+/** Triangle fan trailing +X, with the leading edge brighter than the tail. */
+function sweepFan(radius: number): Geometry {
+  const positions = [0, 0, 0];
+  const normals = [0, 1, 0];
+  const uvs = [0, 0];
+  const colors = [1, 1, 1, 0.05];
+  const indices: number[] = [];
+  for (let i = 0; i <= SWEEP_STEPS; i++) {
+    const a = (SWEEP_SPAN * i) / SWEEP_STEPS;
+    positions.push(Math.cos(a) * radius, 0, -Math.sin(a) * radius);
+    normals.push(0, 1, 0);
+    uvs.push(0, 0);
+    colors.push(1, 1, 1, 0.6 * (1 - i / SWEEP_STEPS) ** 2);
+    if (i) indices.push(0, i, i + 1);
+  }
+  return new Geometry({ positions, normals, uvs, indices, colors });
+}
+
 /** Floor grid lines with RGBA vertex colours, whose alpha fades their emission too. */
 function floorLines(lines: FloorLine[]): Geometry {
   const positions: number[] = [];
@@ -423,6 +446,7 @@ class StageScene extends Scene {
   private readonly planets: Array<{ holder: Group; body: Mesh; trail: Line3D; orbit: Matrix4; drop: Line3D; foot: Line3D; radius: number; speed: number; phase: number; spin: number }> = [];
   private readonly towers: InstancedMesh;
   private readonly scanner: Group;
+  private readonly sweep: Group;
   private belt: Group | null = null;
   private beltSpeed = 0;
   private readonly ship: Ship;
@@ -646,6 +670,13 @@ class StageScene extends Scene {
       plateLine([[Math.cos(a) * 0.3, 0, Math.sin(a) * 0.3], [Math.cos(a) * plateRadius, 0, Math.sin(a) * plateRadius]], plateRadius, false, (point) => (point ? 0 : 1));
     }
     plateLine([[0, PLATE_DROP - STAR_RADIUS * 1.2, 0], [0, 0, 0]], plateRadius, false, (point) => (point ? 0.6 : 0));
+
+    this.sweep = system.add(new Group());
+    this.sweep.position.y = -PLATE_DROP;
+    this.sweep.visible = this.motion;
+    this.sweep.add(new Mesh({ geometry: sweepFan(plateRadius), material: glow(scaled(p.cyan, 0.5), 1, { transparent: true, alphaMode: 'BLEND', doubleSided: true }) }));
+    const sweepEdge = this.sweep.add(new Line3D([[0, 0, 0], [plateRadius, 0, 0]], { material: glow(scaled(p.cyan, 0.9), 1, { transparent: true, alphaMode: 'BLEND' }), width: 0.02 }));
+    fadeLine(sweepEdge, (point) => (point ? 1 : 0.15));
     // Sonar pings; like the pulse, only shown in motion.
     const pingMaterial = glow(p.cyan, 1, { transparent: true, alphaMode: 'BLEND' });
     for (let k = 0; k < PING_COUNT; k++) {
@@ -820,6 +851,8 @@ class StageScene extends Scene {
 
   private placePlanets(): void {
     const point = this.position;
+    const sweepAngle = (this.time * SWEEP_SPEED) % (2 * Math.PI);
+    this.sweep.rotation.setFromEuler(0, -sweepAngle, 0);
     for (const s of this.planets) {
       const a = s.phase + this.time * s.speed;
       s.holder.position.set(Math.cos(a) * s.radius, 0, Math.sin(a) * s.radius);
@@ -831,6 +864,11 @@ class StageScene extends Scene {
       s.drop.setPoint(0, point.x, point.y, point.z);
       s.drop.setPoint(1, point.x, -PLATE_DROP, point.z);
       s.foot.position.set(point.x, -PLATE_DROP, point.z);
+      if (this.motion) {
+        const behind = (sweepAngle - Math.atan2(point.z, point.x) + 2 * Math.PI) % (2 * Math.PI);
+        const flare = 1 + SWEEP_FLARE * Math.exp(-behind * 2.5);
+        s.foot.scale.set(flare, flare, flare);
+      }
     }
   }
 
