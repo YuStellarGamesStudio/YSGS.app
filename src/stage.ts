@@ -188,6 +188,17 @@ const DUST_MIN: Vec3 = [-16, -1, -30];
 const DUST_MAX: Vec3 = [16, 9, 6];
 /** Dust grows in and fades out over this distance at either end of its drift. */
 const DUST_FADE = 4;
+// Energy pulse racing over the floor grid toward the camera: a band of cross lines as
+// [z offset, strength], sent out once per period.
+const PULSE_BAND: Array<[number, number]> = [
+  [-0.12, 0.2],
+  [-0.06, 0.55],
+  [0, 1],
+  [0.06, 0.55],
+  [0.12, 0.2],
+];
+const PULSE_PERIOD = 7;
+const PULSE_SPEED = 9;
 // Target lock: HUD brackets hop to another planet each period, zooming in and blinking while
 // they acquire, then holding until shortly before the next hop.
 const LOCK_PERIOD = 4.5;
@@ -340,6 +351,17 @@ function floorLines(lines: FloorLine[]): Geometry {
   return new Geometry({ positions, normals, uvs, indices, colors });
 }
 
+/** Moves cross line `line` of a floorLines geometry to depth `z` with the given alpha. */
+function placeCrossLine(geometry: Geometry, line: number, z: number, alpha: number): void {
+  const perLine = 2 * FLOOR_VERTS_PER_POINT;
+  const colors = geometry.colors!;
+  for (let v = 0; v < perLine; v++) {
+    const vertex = line * perLine + v;
+    geometry.vertices[vertex * FLOATS_PER_VERTEX + 2] = z + CROSS_Z_OFFSETS[v % FLOOR_VERTS_PER_POINT]!;
+    colors[vertex * 4 + 3] = alpha;
+  }
+}
+
 class StageScene extends Scene {
   private readonly motion: boolean;
   private readonly pointerTarget = { x: 0, y: 0 };
@@ -366,6 +388,7 @@ class StageScene extends Scene {
   /** Per dust particle: x, y, z offset into its drift, and radius. */
   private readonly dustSeeds = new Float32Array(DUST_COUNT * 4);
   private readonly towerHeights: number[];
+  private readonly pulse: Geometry;
   private readonly lock: Billboard;
   private readonly lockSize: number[];
   private readonly systemMatrix: Matrix4;
@@ -433,6 +456,9 @@ class StageScene extends Scene {
     const cross = Array.from({ length: (GRID_NEAR - GRID_FAR) / GRID_STEP }, (): FloorLine => ({ points: [[-GRID_HALF_WIDTH, 0], [GRID_HALF_WIDTH, 0]], across: [0, 1] }));
     this.crossLines = floorLines(cross);
     floor.add(new Mesh({ geometry: this.crossLines, material: gridMaterial }));
+    // Energy pulse; hidden under reduced motion, since it only reads as movement.
+    this.pulse = floorLines(PULSE_BAND.map((): FloorLine => ({ points: [[-GRID_HALF_WIDTH, 0], [GRID_HALF_WIDTH, 0]], across: [0, 1] })));
+    floor.add(new Mesh({ geometry: this.pulse, material: glow(scaled(p.cyan, 0.8), 1, { transparent: true, alphaMode: 'BLEND', doubleSided: true }), position: [0, 0.004, 0], visible: this.motion }));
 
     // Starfield dome, seeded so theme/data rebuilds do not reshuffle it.
     this.stars = this.add(new Group());
@@ -646,6 +672,7 @@ class StageScene extends Scene {
     this.placeLock();
     this.placeShip();
     this.layoutDust();
+    if (this.motion) this.placeEffects();
   }
 
   setView(view: StageView): void {
@@ -660,17 +687,11 @@ class StageScene extends Scene {
   private layoutFloor(): void {
     const [start, end] = this.floorFade;
     const scroll = (this.time * FLOOR_SPEED) % GRID_STEP;
-    const perLine = 2 * FLOOR_VERTS_PER_POINT;
     const cross = this.crossLines;
-    const crossColors = cross.colors!;
-    for (let line = 0; line * perLine * FLOATS_PER_VERTEX < cross.vertices.length; line++) {
+    const lines = cross.vertices.length / (2 * FLOOR_VERTS_PER_POINT * FLOATS_PER_VERTEX);
+    for (let line = 0; line < lines; line++) {
       const z = GRID_FAR + line * GRID_STEP + scroll;
-      const alpha = floorAlpha(z, start, end);
-      for (let v = 0; v < perLine; v++) {
-        const vertex = line * perLine + v;
-        cross.vertices[vertex * FLOATS_PER_VERTEX + 2] = z + CROSS_Z_OFFSETS[v % FLOOR_VERTS_PER_POINT]!;
-        crossColors[vertex * 4 + 3] = alpha;
-      }
+      placeCrossLine(cross, line, z, floorAlpha(z, start, end));
     }
     cross.markUpdated();
 
@@ -740,6 +761,17 @@ class StageScene extends Scene {
     this.lock.scale.set(size, size, size);
   }
 
+  private placeEffects(): void {
+    // Floor pulse, faded with the grid; past the near edge it is out of every shot.
+    const [start, end] = this.floorFade;
+    const z = GRID_FAR + (this.time % PULSE_PERIOD) * PULSE_SPEED;
+    for (let line = 0; line < PULSE_BAND.length; line++) {
+      const [offset, strength] = PULSE_BAND[line]!;
+      placeCrossLine(this.pulse, line, z + offset, floorAlpha(z + offset, start, end) * strength);
+    }
+    this.pulse.markUpdated();
+  }
+
   private placeShip(): void {
     // Cruise along the heading, from SHIP_RANGE behind the start point to SHIP_RANGE past it.
     const travel = ((this.time * SHIP_SPEED + SHIP_RANGE) % (2 * SHIP_RANGE)) - SHIP_RANGE;
@@ -803,6 +835,7 @@ class StageScene extends Scene {
       this.layoutDust();
       this.placePlanets();
       this.placeLock();
+      this.placeEffects();
     }
 
     const growthGoal = this.view === 'data' ? 1 : 0;
