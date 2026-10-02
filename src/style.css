@@ -1628,6 +1628,168 @@ body::before {
   animation: blink 2.4s steps(2, start) infinite;
 }
 
+/* Boot-up: panels power on one after another with a CRT-style flicker. Only the
+   home and data views, because the games grid is rebuilt on every keystroke. */
+.view-home :is(.stat-tile, .game-card),
+.view-data .panel {
+  animation: boot-in 0.7s steps(1, end) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms + 120ms);
+}
+
+.view-home .stat-tile:nth-child(2),
+.view-home .game-card:nth-child(2),
+.view-data .panel:nth-child(2) {
+  --i: 1;
+}
+
+.view-home .stat-tile:nth-child(3),
+.view-home .game-card:nth-child(3),
+.view-data .panel:nth-child(3) {
+  --i: 2;
+}
+
+.view-home .game-card:nth-child(n + 4),
+.view-data .panel:nth-child(n + 4) {
+  --i: 3;
+}
+
+@keyframes boot-in {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.9;
+  }
+  30% {
+    opacity: 0.15;
+  }
+  46% {
+    opacity: 1;
+  }
+  58% {
+    opacity: 0.4;
+  }
+  72%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* A blinking terminal caret after every kicker line. */
+.kicker::after {
+  content: '';
+  width: 0.55em;
+  height: 1em;
+  background: var(--accent);
+  box-shadow: var(--glow);
+  animation: blink 1.1s steps(1) infinite;
+}
+
+/* A holographic glint travels across the hero title every few seconds. */
+.hero h1 {
+  background:
+    linear-gradient(105deg, transparent 42%, var(--sheen) 50%, transparent 58%) -100% 0 / 50% 100% no-repeat,
+    linear-gradient(100deg, var(--text) 30%, var(--accent) 70%, var(--accent-2)) 0 0 / 100% 100% no-repeat;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: title-glint 7s ease-in-out 1.2s infinite;
+}
+
+@keyframes title-glint {
+  0% {
+    background-position: -100% 0, 0 0;
+  }
+  35%,
+  100% {
+    background-position: 200% 0, 0 0;
+  }
+}
+
+/* Primary buttons get a light sweep; the chamfered clip-path already trims it. */
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.55) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+
+.btn-primary:hover::before {
+  transform: translateX(120%);
+  transition: transform 0.7s var(--ease);
+}
+
+/* Pointer glow: main.ts feeds the cursor position into --mx/--my. */
+@media (hover: hover) and (pointer: fine) {
+  .game-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(16rem circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .game-card:hover::after {
+    opacity: 1;
+  }
+
+  .panel:hover {
+    background:
+      radial-gradient(18rem circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
+      var(--surface);
+  }
+}
+
+/* Bar charts end in a bright leading edge, like a gauge needle. */
+.bar-fill {
+  position: relative;
+}
+
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: -3px 0 -3px auto;
+  width: 2px;
+  background: var(--accent-2);
+  box-shadow: 0 0 8px var(--accent-2);
+}
+
+/* A faint scan beam drifts down the whole viewport behind the content. */
+:root[data-theme='dark'] {
+  --sheen: #ffffff;
+}
+
+:root[data-theme='light'] {
+  --sheen: var(--accent-2);
+}
+
+:root[data-theme='dark']::after {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto;
+  height: 24vh;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 7%, transparent) 85%, color-mix(in srgb, var(--accent) 16%, transparent) 98%, transparent);
+  transform: translateY(-100%);
+  animation: scan-beam 11s linear infinite;
+}
+
+@keyframes scan-beam {
+  to {
+    transform: translateY(100vh);
+  }
+}
+
 @media (max-width: 860px) {
   #app::before,
   .kicker-meta {

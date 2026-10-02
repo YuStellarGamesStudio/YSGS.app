@@ -869,6 +869,15 @@ window.addEventListener('blur', () => stage?.update(stageState(parseRoute())));
 window.addEventListener('pointermove', (event) => {
   if (!reducedMotion.matches) stage?.setPointer((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);
 });
+// Feeds the cursor position to the card and panel glow (--mx/--my in style.css).
+document.addEventListener('pointermove', (event) => {
+  if (reducedMotion.matches || event.pointerType !== 'mouse' || !(event.target instanceof Element)) return;
+  const target = event.target.closest<HTMLElement>('.game-card, .panel');
+  if (!target) return;
+  const box = target.getBoundingClientRect();
+  target.style.setProperty('--mx', `${event.clientX - box.left}px`);
+  target.style.setProperty('--my', `${event.clientY - box.top}px`);
+});
 
 void startLoading();
 
