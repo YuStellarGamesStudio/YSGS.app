@@ -35,7 +35,8 @@ function writeStorage(key: string, value: string): void {
 const storedLocale = readStorage(LOCALE_KEY);
 const storedMusicVolume = readStorage(MUSIC_VOLUME_KEY);
 const parsedMusicVolume = storedMusicVolume?.trim() ? Number(storedMusicVolume) : NaN;
-const musicVolume = Number.isFinite(parsedMusicVolume) && parsedMusicVolume >= 0 && parsedMusicVolume <= 1 ? parsedMusicVolume : 0.05;
+// Snap legacy stored values to the slider's 5% step so playback matches the slider.
+const musicVolume = Number.isFinite(parsedMusicVolume) && parsedMusicVolume >= 0 && parsedMusicVolume <= 1 ? Math.round(parsedMusicVolume * 20) / 20 : 0.05;
 const state = {
   locale: isLocale(storedLocale) ? storedLocale : defaultLocale,
   theme: (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark') as Theme,
@@ -149,7 +150,7 @@ const languageButtons = locales.map((locale) =>
 const languageGroup = h('div', { class: 'lang-switch', role: 'group' }, ...languageButtons);
 const themeButton = h('button', { type: 'button', class: 'theme-toggle' });
 const musicToggle = h('button', { type: 'button', class: 'music-toggle', 'aria-describedby': 'music-status' });
-const musicSlider = h('input', { id: 'music-volume', type: 'range', class: 'music-volume', min: 0, max: 100, step: 1 });
+const musicSlider = h('input', { id: 'music-volume', type: 'range', class: 'music-volume', min: 0, max: 100, step: 5 });
 const musicPercent = h('output', { class: 'music-percent', for: 'music-volume', 'aria-live': 'off' });
 const musicStatus = h('span', { id: 'music-status', class: 'visually-hidden', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' });
 const musicControls = h('div', { class: 'music-controls', role: 'group' }, musicToggle, musicSlider, musicPercent, musicStatus);
