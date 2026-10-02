@@ -30,7 +30,7 @@ export interface Ship {
   ring: Group;
   /** Anti-collision strobes, flashed by the caller. */
   strobes: Mesh[];
-  /** Advances the exhaust sparks to `time` seconds; stateless, so any time can be shown. */
+  /** Animates the drive (flicker, shock diamonds, plasma rings, ion streaks) to `time` seconds; stateless, so any time can be shown. */
   updateExhaust(time: number): void;
 }
 
@@ -46,12 +46,19 @@ const SPINE_TO = 2.3;
 const SPINE_HALF = 0.2;
 const SPINE_BAYS = 8;
 const NOZZLE_EXIT = 4.25;
-const SPARK_COUNT = 48;
+const SPARK_COUNT = 64;
 /** Seconds from leaving the nozzle to burning out. */
-const SPARK_LIFE = 1.1;
+const SPARK_LIFE = 0.9;
 /** Distance a spark of average speed travels over its life. */
-const SPARK_TRAVEL = 2.8;
-const SPARK_RADIUS = 0.035;
+const SPARK_TRAVEL = 3.4;
+const SPARK_RADIUS = 0.03;
+/** Ion streaks are this many times longer than they are wide. */
+const SPARK_STRETCH = 6;
+/** Shock diamonds in the exhaust core, as [distance aft of the nozzle exit, radius]. */
+const DIAMONDS: Array<[number, number]> = [[0.3, 0.12], [0.68, 0.1], [1.02, 0.075], [1.32, 0.05]];
+const DIAMOND_HALF = 0.09;
+const PLASMA_RINGS = 3;
+const PLASMA_RING_LIFE = 1.6;
 
 /**
  * Lathes `profile` around the X axis. Repeated points make a hard edge. `alpha`, one value per
@@ -288,8 +295,22 @@ export function buildShip(m: ShipMaterials): Ship {
     }),
   );
   root.add(new Mesh({ geometry: lathe([[3.5, 0.19], [3.5, 0]]), material: m.engine }));
-  root.add(new Mesh({ geometry: lathe([[NOZZLE_EXIT, 0.4], [4.7, 0.42], [5.6, 0.36], [7, 0.16]], { alpha: [0.22, 0.15, 0.05, 0] }), material: m.plume }));
-  root.add(new Mesh({ geometry: lathe([[3.6, 0.17], [NOZZLE_EXIT, 0.15], [5, 0.09], [5.9, 0.02]], { alpha: [0.9, 0.7, 0.3, 0] }), material: m.exhaust }));
+  // The plume and core hang off a group at the nozzle exit so the flicker stretches them aft.
+  const drive = root.add(new Group());
+  drive.position.set(NOZZLE_EXIT, 0, 0);
+  drive.add(new Mesh({ geometry: lathe([[0, 0.4], [0.45, 0.42], [1.35, 0.36], [2.75, 0.16]], { alpha: [0.22, 0.15, 0.05, 0] }), material: m.plume }));
+  drive.add(new Mesh({ geometry: lathe([[-0.65, 0.17], [0, 0.15], [0.75, 0.09], [1.65, 0.02]], { alpha: [0.9, 0.7, 0.3, 0] }), material: m.exhaust }));
+  // Shock diamonds: white-hot nodes where the supersonic jet re-compresses.
+  const diamonds = DIAMONDS.map(([x, r]) => {
+    const diamond = drive.add(new Group());
+    diamond.position.set(x, 0, 0);
+    diamond.add(new Mesh({ geometry: lathe([[-DIAMOND_HALF, 0], [0, r], [DIAMOND_HALF, 0]], { segments: 12 }), material: m.engine }));
+    return diamond;
+  });
+  // Plasma rings shed by the magnetic nozzle, widening and thinning as they drift aft.
+  const plasmaRings = Array.from({ length: PLASMA_RINGS }, () =>
+    drive.add(new Mesh({ geometry: lathe([[-0.06, 1], [0, 1], [0.06, 1]], { alpha: [0, 0.9, 0] }), material: m.plume })),
+  );
 
   // Comms mast and high-gain dish on the command module's dorsal side.
   root.add(beams(m.metal, [{ from: [-2.85, 0.45, 0], to: [-2.85, 0.95, 0], thickness: 0.035 }]));
@@ -309,8 +330,8 @@ export function buildShip(m: ShipMaterials): Ship {
   light(m.starboard, [2.74, 0, -0.6]);
   const strobes = [light(m.strobe, [-4.12, 0, 0], 0.04), light(m.strobe, [1.55, 1.78, 0]), light(m.strobe, [1.55, -1.78, 0])];
 
-  // Exhaust sparks: each one loops on its own phase, speed and heading, widening as it flies
-  // aft and shrinking away as it cools. Low-discrepancy sequences spread them without an RNG.
+  // Ion streaks: each one loops on its own phase, speed and heading, widening as it flies aft
+  // and shrinking away as it cools. Low-discrepancy sequences spread them without an RNG.
   const sparks = root.add(new InstancedMesh({ geometry: Geometry.sphere(1, 6, 4), material: m.sparks, count: SPARK_COUNT }));
   const fract = (v: number): number => v - Math.floor(v);
   const sparkSeeds = Array.from({ length: SPARK_COUNT }, (_, i) => ({
@@ -324,12 +345,25 @@ export function buildShip(m: ShipMaterials): Ship {
   const rotation = new Quaternion();
   const scale = new Vector3();
   const updateExhaust = (time: number): void => {
+    // Two incommensurate waves give an irregular throb rather than a visible period.
+    const throb = Math.sin(time * 23) * 0.5 + Math.sin(time * 37.3) * 0.5;
+    drive.scale.set(1 + throb * 0.07, 1 + throb * 0.03, 1 + throb * 0.03);
+    diamonds.forEach((diamond, i) => {
+      const pulse = 0.8 + 0.2 * Math.sin(time * 31 - i * 1.3);
+      diamond.scale.set(1, pulse, pulse);
+    });
+    plasmaRings.forEach((ring, i) => {
+      const age = fract(time / PLASMA_RING_LIFE + i / PLASMA_RINGS);
+      const radius = 0.4 + age * 0.45;
+      ring.position.set(age * 2.4, 0, 0);
+      ring.scale.set(Math.max(1e-3, 1 - age), radius, radius);
+    });
     sparkSeeds.forEach(({ phase, speed, spread, angle }, i) => {
       const age = fract(time / SPARK_LIFE + phase);
-      const r = spread * (0.06 + age * 0.3);
+      const r = spread * (0.05 + age * 0.28);
       const size = Math.max(1e-3, SPARK_RADIUS * (1 - age) * (0.5 + spread * 0.5));
       position.set(NOZZLE_EXIT - 0.1 + age * SPARK_TRAVEL * speed, Math.cos(angle) * r, Math.sin(angle) * r);
-      sparks.setMatrixAt(i, matrix.compose(position, rotation, scale.set(size, size, size)));
+      sparks.setMatrixAt(i, matrix.compose(position, rotation, scale.set(size * SPARK_STRETCH, size, size)));
     });
   };
   updateExhaust(0);
