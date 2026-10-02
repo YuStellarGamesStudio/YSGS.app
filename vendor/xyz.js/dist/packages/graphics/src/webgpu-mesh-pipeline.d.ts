@@ -1,6 +1,14 @@
+import { RenderVisibilitySet } from '../../core/src/render-visibility.js';
+import type { GPUParticleEmitter3D } from '../../core/src/gpu-particles3d.js';
+import { NativeMaterial3D } from '../../core/src/native-material3d.js';
 import type { Scene } from '../../core/src/scene.js';
-import { FrameStats } from './render-stats.js';
-/** Persistent 3D resources, including versioned CPU skinning and hardware instances. */
+import { Mesh } from '../../core/src/mesh.js';
+import type { EnvironmentMap } from '../../core/src/environment.js';
+import type { Geometry } from '../../core/src/geometry.js';
+import type { Texture2DSource } from '../../assets/src/index.js';
+import type { FrameStats } from './render-stats.js';
+import type { NativeResidency, ResidencyAllocation } from './residency.js';
+/** Persistent 3D resources, native joint palettes and hardware instances. */
 export declare class WebGPUMeshPipeline {
     private readonly device;
     private readonly opticalPackLayout;
@@ -18,7 +26,27 @@ export declare class WebGPUMeshPipeline {
     private readonly post;
     private readonly format;
     private readonly sampleCount;
+    private readonly residency;
+    private readonly pipelineRecipes;
+    private readonly particles;
+    private readonly fadedPipeline;
+    private readonly fadedHdrPipeline;
     private readonly geometries;
+    private textureEpoch;
+    private readonly nativeMaterials;
+    private readonly pendingMaterials;
+    private destroyed;
+    private readonly visibilityCache;
+    readonly visibility: RenderVisibilitySet;
+    private readonly visibilityOptions;
+    private readonly depthTextureVersions;
+    private depthRevision;
+    private proofWidth;
+    private proofHeight;
+    private proofMode;
+    private readonly gathered;
+    private occlusion;
+    private readonly blendedDraw;
     private readonly meshes;
     private readonly textures;
     private readonly premultipliedTextures;
@@ -55,6 +83,8 @@ export declare class WebGPUMeshPipeline {
     /** Linear (1, 1, 1) for every vertex or instance that has no colors of its own. */
     private whiteBuffer;
     private whiteCapacity;
+    private influenceBuffer;
+    private influenceCapacity;
     /** Replaced white buffers wait here until commands that may still bind them are submitted. */
     private readonly retired;
     private sceneBindGroup;
@@ -89,23 +119,32 @@ export declare class WebGPUMeshPipeline {
     private readonly shadowAttachment;
     private readonly shadowDescriptor;
     private constructor();
-    static initialize(device: GPUDevice, format: GPUTextureFormat, isDestroyed: () => boolean, sampleCount: number): Promise<WebGPUMeshPipeline>;
+    static initialize(device: GPUDevice, format: GPUTextureFormat, isDestroyed: () => boolean, sampleCount: number, stats: FrameStats, residency: NativeResidency): Promise<WebGPUMeshPipeline>;
     resize(width: number, height: number): void;
     private ensureRefraction;
     private releaseRefraction;
     /** Shadows and linear HDR resolution precede the existing sprite overlay. */
-    render(scene: Scene | undefined, encoder: GPUCommandEncoder, view: GPUTextureView, width: number, height: number, aspect: number, clearValue: GPUColor): boolean;
+    render(scene: Scene | undefined, encoder: GPUCommandEncoder, view: GPUTextureView, width: number, height: number, aspect: number, clearValue: GPUColor, viewportHeight?: number): boolean;
     private createSceneGroup;
     private ensureShadow;
     private prepareScene;
     /** Uploads (or reuses) GPU copies of the active maps and rebinds the scene groups on change. */
     private ensureEnvironment;
+    prepareEnvironment(map: EnvironmentMap): void;
+    prepareGeometry(geometry: Geometry): ResidencyAllocation;
+    unloadGeometry(geometry: Geometry): void;
+    prepareMaterial(material: NativeMaterial3D): Promise<void>;
+    prepareGpuParticles(emitter: GPUParticleEmitter3D): void;
+    afterSubmit(): void;
+    prepareMesh(mesh: Mesh): void;
+    unloadTexture(texture: Texture2DSource): void;
     private uploadEnvironment;
     private reflectionGroup;
     private renderShadows;
     private drawMesh;
     /** White RGBA storage also serves the RGB instance layout (every component is one). */
     private white;
+    private defaultInfluences;
     /** Creates or refreshes a vertex-step buffer holding `source`, which may change between frames. */
     private colorBuffer;
     private decodeClear;

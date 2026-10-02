@@ -1,17 +1,34 @@
+import type { GPUParticleEmitter3D } from '../../core/src/gpu-particles3d.js';
+import { NativeMaterial3D } from '../../core/src/native-material3d.js';
 import type { Scene } from '../../core/src/scene.js';
 import type { Texture, Texture2DSource } from '../../assets/src/index.js';
+import type { NativeTextureFormat } from '../../assets/src/native-texture.js';
 import type { Rect2D } from '../../core/src/gameplay/contracts.js';
 import type { IsolatedGroup2D } from '../../core/src/rendering2d/isolated-group.js';
 import type { RenderTexture2D, RenderTextureOptions2D } from './render-texture2d.js';
 import type { Renderer } from './index.js';
-import { type RenderStats } from './render-stats.js';
+import { type RenderStats, type GpuTimingOptions } from './render-stats.js';
 import { type FrameEffects, type RenderSnapshot } from './render2d-contract.js';
 import { Material2D, PostProcessor2D } from '../../core/src/materials2d/material2d.js';
+import type { Geometry } from '../../core/src/geometry.js';
+import { Geometry2D } from '../../core/src/rendering2d/geometry2d.js';
+import { NativeResidency } from './residency.js';
+import type { ResidencyBudgetOptions } from './residency.js';
+import type { PreparationResource, PreparedResourceLease, ResourcePreparationOptions } from './preparation.js';
 export declare class WebGPURenderer implements Renderer {
     private readonly onError;
     private readonly antialias;
     readonly backend: "webgpu";
-    private readonly idleStats;
+    private readonly frameStats;
+    private readonly gpuTimingEnabled;
+    private gpuTimer;
+    readonly residency: NativeResidency;
+    private readonly preparedGeometry;
+    configureResidency(options: ResidencyBudgetOptions): void;
+    retainFrameResources(): PreparedResourceLease;
+    prepareGeometry(source: Geometry | Geometry2D): Promise<void>;
+    unloadGeometry(source: Geometry | Geometry2D): void;
+    prepareResource(source: PreparationResource, options?: ResourcePreparationOptions): Promise<PreparedResourceLease>;
     get stats(): RenderStats;
     readonly capabilities: {
         threeD: boolean;
@@ -20,6 +37,7 @@ export declare class WebGPURenderer implements Renderer {
         storageBuffers: boolean;
         instancing: boolean;
         maxTextureSize: number;
+        supportedTextureFormats: readonly NativeTextureFormat[];
     };
     private canvas;
     private context;
@@ -45,9 +63,10 @@ export declare class WebGPURenderer implements Renderer {
     private destroyed;
     private lostError;
     private readonly render2DHooks;
-    constructor(onError: (error: Error) => void, antialias?: boolean);
+    constructor(onError: (error: Error) => void, antialias?: boolean, gpuTiming?: GpuTimingOptions);
     initialize(canvas: HTMLCanvasElement): Promise<void>;
-    prepareMaterial(material: Material2D): Promise<void>;
+    prepareMaterial(material: Material2D | NativeMaterial3D): Promise<void>;
+    prepareGpuParticles(emitter: GPUParticleEmitter3D): Promise<void>;
     preparePostProcessor(effect: PostProcessor2D): Promise<void>;
     createRenderTexture(options: RenderTextureOptions2D): RenderTexture2D;
     renderToTexture(target: RenderTexture2D, content: Scene | IsolatedGroup2D, options?: {
@@ -66,7 +85,7 @@ export declare class WebGPURenderer implements Renderer {
     captureScene(scene: Scene, width: number, height: number): Promise<RenderSnapshot>;
     beginFrame(): void;
     render(scene?: Scene, width?: number, height?: number, effects?: FrameEffects): void;
-    endFrame(): void;
+    endFrame(publishFrame?: boolean): void;
     resize(width: number, height: number): void;
     private cacheTexture;
     private releaseUnusedTextures;

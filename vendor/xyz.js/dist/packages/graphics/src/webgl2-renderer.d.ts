@@ -1,12 +1,20 @@
+import { NativeMaterial3D } from '../../core/src/native-material3d.js';
 import type { Scene } from '../../core/src/scene.js';
+import type { GPUParticleEmitter3D } from '../../core/src/gpu-particles3d.js';
 import { type Material2D, type PostProcessor2D } from '../../core/src/materials2d/material2d.js';
-import { type Texture2DSource, Texture } from '../../assets/src/index.js';
+import type { Geometry } from '../../core/src/geometry.js';
+import { Texture } from '../../assets/src/index.js';
+import type { Texture2DSource } from '../../assets/src/index.js';
 import type { IsolatedGroup2D } from '../../core/src/rendering2d/isolated-group.js';
 import type { Rect2D } from '../../core/src/gameplay/contracts.js';
 import { type RenderTexture2D, type RenderTextureOptions2D } from './render-texture2d.js';
-import { FrameStats } from './render-stats.js';
+import { FrameStats, type GpuTimingOptions } from './render-stats.js';
 import type { GraphicsCapabilities, Renderer } from './index.js';
 import { type FrameEffects, type RenderSnapshot } from './render2d-contract.js';
+import { Geometry2D } from '../../core/src/rendering2d/geometry2d.js';
+import { NativeResidency } from './residency.js';
+import type { ResidencyBudgetOptions } from './residency.js';
+import type { PreparationResource, PreparedResourceLease, ResourcePreparationOptions } from './preparation.js';
 /** A WebGL2 renderer with renderer-owned, frame-lifetime-cached GPU resources. */
 export declare class WebGL2Renderer implements Renderer {
     private readonly onError;
@@ -27,9 +35,30 @@ export declare class WebGL2Renderer implements Renderer {
     private destroyed;
     private lostError;
     private readonly frustum;
-    private readonly meshDraws;
+    private readonly visibilityCache;
+    private readonly visibility;
+    private readonly visibilityOptions;
+    private occlusion;
+    private particles3D;
+    private readonly depthTextureVersions;
+    private depthRevision;
+    private depthWidth;
+    private depthHeight;
+    private depthMode;
+    private readonly isColorBlended;
     private readonly drawSorter;
     readonly stats: FrameStats;
+    private readonly gpuTimingEnabled;
+    private gpuTimer;
+    readonly residency: NativeResidency;
+    private readonly preparedGeometry;
+    configureResidency(options: ResidencyBudgetOptions): void;
+    retainFrameResources(): PreparedResourceLease;
+    prepareGeometry(source: Geometry | Geometry2D): Promise<void>;
+    prepareGpuParticles(emitter: GPUParticleEmitter3D): Promise<void>;
+    unloadGeometry(source: Geometry | Geometry2D): void;
+    prepareResource(source: PreparationResource, options?: ResourcePreparationOptions): Promise<PreparedResourceLease>;
+    private readonly targetBytes;
     private maxTextureSize;
     private maxWidth;
     private maxHeight;
@@ -52,7 +81,10 @@ export declare class WebGL2Renderer implements Renderer {
     private readonly lightingData;
     private readonly tintData;
     private readonly meshInstances;
+    private readonly visibleMeshInstances;
+    private readonly meshSkins;
     private readonly samplers;
+    private supportedTextureFormats;
     private readonly atlas;
     private shadowBuffer;
     private sheenBuffer;
@@ -77,6 +109,7 @@ export declare class WebGL2Renderer implements Renderer {
     private compositeProgram;
     private readonly compositeUniforms;
     private readonly materials;
+    private readonly nativeMaterials;
     private readonly processors;
     private readonly snapshots;
     private frameTarget;
@@ -85,7 +118,7 @@ export declare class WebGL2Renderer implements Renderer {
     private sceneTarget;
     get capabilities(): GraphicsCapabilities;
     private readonly onContextLost;
-    constructor(onError: (error: Error) => void, antialias?: boolean);
+    constructor(onError: (error: Error) => void, antialias?: boolean, gpuTiming?: GpuTimingOptions);
     initialize(canvas: HTMLCanvasElement): Promise<void>;
     createRenderTexture(options: RenderTextureOptions2D): RenderTexture2D;
     renderToTexture(target: RenderTexture2D, content: Scene | IsolatedGroup2D, options?: {
@@ -101,7 +134,7 @@ export declare class WebGL2Renderer implements Renderer {
     }): Promise<Texture>;
     prepareTextures(sources: readonly Texture2DSource[]): Promise<void>;
     unloadTexture(source: Texture2DSource): void;
-    prepareMaterial(material: Material2D): Promise<void>;
+    prepareMaterial(material: Material2D | NativeMaterial3D): Promise<void>;
     preparePostProcessor(effect: PostProcessor2D): Promise<void>;
     private prepareNative;
     private requireNative;
@@ -110,7 +143,7 @@ export declare class WebGL2Renderer implements Renderer {
     render(scene?: Scene, width?: number, height?: number, effects?: FrameEffects): void;
     captureScene(scene: Scene, width: number, height: number): Promise<RenderSnapshot>;
     private renderFrame;
-    endFrame(): void;
+    endFrame(publishFrame?: boolean): void;
     resize(width: number, height: number): void;
     private drawEffects2D;
     private drawComposite;
@@ -120,6 +153,8 @@ export declare class WebGL2Renderer implements Renderer {
     private bindMaterialTexture;
     private cacheSampler;
     private drawMesh;
+    private cacheSkin;
+    private cacheInstances;
     private drawShadows;
     private preparePostTarget;
     private prepareRefractionTarget;

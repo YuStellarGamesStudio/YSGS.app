@@ -1,12 +1,12 @@
 {
   "name": "xyz.js",
-  "version": "1.7.0",
+  "version": "1.11.0",
   "description": "Browser-native TypeScript game engine",
   "type": "module",
   "private": false,
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=26.0.0"
+    "node": ">=22.0.0"
   },
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -16,8 +16,29 @@
       "import": "./dist/src/index.js"
     }
   },
+  "bin": {
+    "xyz-create": "scripts/create-game.mjs"
+  },
   "files": [
-    "dist"
+    "dist/src",
+    "dist/packages",
+    "dist/vendor/opm/LICENSE",
+    "dist/vendor/opm/manifest.json",
+    "dist/vendor/opm/dist/api/index.js",
+    "dist/vendor/opm/dist/core/index.js",
+    "dist/vendor/opm/dist/chunks/3LW4LAXR.js",
+    "dist/vendor/opm/dist/chunks/MUROU3LE.js",
+    "dist/vendor/opm/dist/chunks/PMWEZUON.js",
+    "dist/vendor/opm/dist/chunks/YTCTYSST.js",
+    "dist/vendor/opm/dist/voices/brass.js",
+    "dist/vendor/opm/dist/voices/examples.json",
+    "dist/vendor/opm/dist/voices/normalize.js",
+    "dist/vendor/opm/dist/voices/schema.js",
+    "dist/vendor/opm/dist/voices/voice.schema.json",
+    "dist/vendor/opm/dist/worklet/processor.js",
+    "scripts/create-game.mjs",
+    "scripts/starter-package.mjs",
+    "starters"
   ],
   "sideEffects": false,
   "devDependencies": {
@@ -34,6 +55,12 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/minify-dist.mjs && node scripts/copy-vendor.mjs",
+    "build:site": "pnpm build && node scripts/build-site.mjs",
+    "smoke:site": "node scripts/smoke-site.mjs",
+    "create:game": "node scripts/create-game.mjs",
+    "audio:native-load": "node scripts/audio-native-load.mjs",
+    "benchmark:production": "node scripts/production-workloads.mjs",
+    "platform:gate": "node scripts/platform-hardware.mjs",
     "typecheck": "tsc -p tsconfig.check.json",
     "test": "vitest run",
     "dev": "vite --host 127.0.0.1",
@@ -42,7 +69,15 @@
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "smoke:examples": "node scripts/smoke-examples.mjs",
+    "regression:browser": "node scripts/regression-browser.mjs",
+    "platform:browser": "node scripts/platform-browser.mjs",
+    "platform:manual": "node scripts/platform-manual.mjs",
+    "platform:safari": "node scripts/safari-platform.mjs",
+    "smoke:text": "node scripts/text-layout-smoke.mjs",
     "check:tree-shaking": "node scripts/check-tree-shaking.mjs",
+    "soak:mixed": "node scripts/mixed-soak.mjs",
+    "assets:build": "node scripts/build-assets.mjs",
+    "check:asset-deployment": "node scripts/verify-asset-deployment.mjs",
     "docs:api": "typedoc"
   }
 }

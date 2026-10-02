@@ -1,12 +1,25 @@
-import { AssetLoader, type PreloadBatch } from '../../assets/src/index.js';
+import { AssetLoader, ResourcePool, type PreloadBatch } from '../../assets/src/index.js';
 import { InputManager } from '../../input/src/index.js';
 import { AudioManager } from '../../audio/src/audio-manager.js';
-import { type Renderer, type RendererPreference } from '../../graphics/src/index.js';
+import { type Renderer, type RendererPreference, type GpuTimingOptions } from '../../graphics/src/index.js';
 import { Scene } from './scene.js';
 import { Clock } from './clock.js';
 import { type TransitionOptions } from './transitions2d/index.js';
+import { AccessibilityManager } from './accessibility/index.js';
+import { AccessibilityPreferences } from './accessibility/preferences.js';
 import { SaveManager, type SaveSchema, type SaveStorage } from './storage.js';
 import { I18n, type I18nOptions } from './i18n.js';
+import type { WarmupOptions, WarmupLease } from '../../graphics/src/warmup.js';
+import { type FrameWorkStats } from './frame-work.js';
+export type { FrameWorkStats } from './frame-work.js';
+import type { FactoryDefinitions, FactoryRegistry, FactoryServices } from './factories.js';
+import type { ContentLoadCoordinator } from './content-storage.js';
+export type { WarmupOptions, WarmupProgress, WarmupLease, } from '../../graphics/src/warmup.js';
+export interface ResourceBudgets {
+    decodedTextureBytes?: number;
+    nativeTextureBytes?: number;
+    nativeGeometryBytes?: number;
+}
 export interface GameOptions {
     canvas: string | HTMLCanvasElement;
     renderer?: RendererPreference;
@@ -27,11 +40,17 @@ export interface GameOptions {
      * `graphicslost` and `graphicsrecovered`. Enabled by default; when false a loss is fatal.
      */
     recoverGraphics?: boolean;
+    /** Optional native GPU timestamps; unsupported backends report an explicit status. */
+    gpuTiming?: GpuTimingOptions;
     /** Defaults to an isolated in-memory store; inject a browser backend for persistence. */
     saveStorage?: SaveStorage;
     saveSchema?: SaveSchema;
     /** Locale registry, exposed as `game.i18n`; defaults to locale `en` with no messages. */
     i18n?: I18nOptions;
+    /** Independent decoded CPU / native texture / native geometry cache estimates. */
+    resourceBudgets?: ResourceBudgets;
+    /** Opt-in whole-frame CPU target and stage attribution; callbacks cannot be preempted. */
+    frameWorkBudgetMs?: number;
     /**
      * Freezes `game.audio` together with the game. `onPause` follows `pause()`/`resume()`;
      * `onHidden` follows the page becoming hidden or visible. Both default to false, so audio keeps
@@ -45,6 +64,10 @@ export interface GameOptions {
 export type GameState = 'idle' | 'running' | 'paused' | 'destroyed';
 export interface SetSceneOptions {
     transition?: TransitionOptions;
+    /** Warm the initialized candidate in bounded RAF chunks before atomic publication. */
+    warmup?: WarmupOptions;
+    /** Cancel candidate preparation before publication; a published Scene is never rolled back. */
+    signal?: AbortSignal;
 }
 export interface SceneTransitionEventDetail {
     readonly from: Scene;
@@ -71,6 +94,8 @@ export declare class Game extends EventTarget {
     private loadingScene;
     private activeTransition;
     private readonly frameEffects;
+    private readonly frameWorkCounter;
+    get frameWork(): FrameWorkStats;
     private sceneVersion;
     private switchingScene;
     private requestId;
@@ -88,6 +113,22 @@ export declare class Game extends EventTarget {
     private readonly audioPause;
     private readonly accessibilityManager;
     private readonly accessibilitySize;
+    private preferencePolicy;
+    private readonly onMotionPreferenceChange;
+    private readonly warmupControllers;
+    private readonly warmupLeases;
+    private currentWarmup;
+    private readonly warmupProtections;
+    private resourcePool;
+    private contentLifetime;
+    /** Shared acquisition ownership is lazy and local to this Game. */
+    get resources(): ResourcePool;
+    /** Player presentation policy; unused games do not install OS media listeners. */
+    get preferences(): AccessibilityPreferences;
+    /** Load/migrate/restore a fresh candidate before the existing Scene publication barrier. */
+    createContentLoader<Definitions extends FactoryDefinitions>(registry: FactoryRegistry<Definitions>, services: FactoryServices<Definitions>): Promise<ContentLoadCoordinator<Definitions>>;
+    get accessibility(): AccessibilityManager;
+    warmup(scene: Scene, options?: WarmupOptions): Promise<WarmupLease>;
     private constructor();
     static create(options: GameOptions): Promise<Game>;
     get state(): GameState;

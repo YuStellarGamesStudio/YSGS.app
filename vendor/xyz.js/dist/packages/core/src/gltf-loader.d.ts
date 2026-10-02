@@ -3,7 +3,7 @@ import { Vector3 } from '../../math/src/index.js';
 import { AnimationClip } from './animation.js';
 import { PointLight, SpotLight } from './lights.js';
 import { Group } from './group.js';
-import { type KTX2Transcoder } from './ktx2.js';
+import type { KTX2Transcoder, KTX2NativeTranscoder } from './ktx2.js';
 export interface GLTFDirectionalLight {
     /** Unit vector the light travels along (the node's −Z axis in world space). */
     direction: Vector3;
@@ -40,11 +40,20 @@ export interface GLTFLoadOptions {
      * to uncompressed 8-bit RGB(A) with no or ZLIB supercompression.
      */
     ktx2Transcoder?: KTX2Transcoder;
+    /** Preserve GPU payloads and all mips instead of decoding KTX2 images to bitmaps. */
+    nativeTextures?: boolean;
+    ktx2NativeTranscoder?: KTX2NativeTranscoder;
+}
+export interface DracoAccessorInfo {
+    readonly componentType: number;
+    readonly normalized: boolean;
 }
 /** `attributes` maps glTF semantics to Draco attribute unique ids from the extension. */
 export interface DracoDecodeRequest {
     readonly data: Uint8Array;
     readonly attributes: Readonly<Record<string, number>>;
+    /** Declared glTF scalar semantics; Draco's storage type alone cannot convey normalization. */
+    readonly accessors: Readonly<Record<string, DracoAccessorInfo>>;
 }
 /**
  * Values are in the accessor's logical space: dequantized floats for float accessors, normalized

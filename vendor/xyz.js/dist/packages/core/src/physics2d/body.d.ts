@@ -1,7 +1,7 @@
 import { Vector2 } from '../../../math/src/index.js';
 import type { GameObject } from '../game-object.js';
 export interface RigidBodyOptions {
-    type?: 'static' | 'dynamic';
+    type?: 'static' | 'dynamic' | 'kinematic';
     mass?: number;
     restitution?: number;
     friction?: number;
@@ -17,6 +17,8 @@ export declare class RigidBody2D {
     readonly velocity: Vector2;
     private readonly accumulatedForce;
     private accumulatedTorque;
+    /** @internal Invalidates queued frame impulses when the caller clears forces. */
+    forceEpoch: number;
     private owningObject;
     private geometry;
     private bodyMass;
@@ -34,12 +36,9 @@ export declare class RigidBody2D {
     private sleepAngle;
     private sleepScaleX;
     private sleepScaleY;
-    readonly type: 'static' | 'dynamic';
+    readonly type: 'static' | 'dynamic' | 'kinematic';
     lockRotation: boolean;
-    /**
-     * Sweeps this dynamic body's translation against static, non-sensor colliders each step so
-     * fast moves cannot tunnel through thin walls. Rotation is not swept.
-     */
+    /** Conservative translation/rotation CCD against static, dynamic and kinematic solid bodies. */
     ccd: boolean;
     constructor(options?: RigidBodyOptions);
     get allowSleep(): boolean;

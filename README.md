@@ -23,7 +23,7 @@
 
 - 語系：預設英文，可切換繁體中文、日文；選擇會存於 `localStorage`。「開始遊玩」優先使用遊戲資料的 `launchUrls[目前語系]`，沒有時使用 `url`。
 - 風格：提供深色與淺色兩種風格；首次造訪依系統偏好，選擇會存於 `localStorage`。首頁採較緊湊的首屏，讓第一列遊戲封面提早露出；封面底部使用較淡的暗漸層，保留圖片細節。
-- 3D 背景：以 [XYZ.js](https://github.com/YueyuHoshizora/XYZ.js) v1.7 渲染全畫面 3D 場景（星空、全像格線地板、行星系統；資料頁以分類數量生成 3D 柱狀天際線），鏡頭隨路由移動、隨滑鼠輕微視差，並跟著深色／淺色切換。地板格線依頁面淡出：會看到行星系統的頁面在系統前方就淡出，避免格線穿過軌道與行星；資料頁保留遠處地板承托柱狀圖。行星系統是一顆帶日冕的藍白恆星，每款遊戲對應一顆行星：行星表面為程式產生的貼圖（岩質、雲層、海洋、氣體巨行星與行星環），只受恆星點光源照明而有晝夜相位，軌道接近共面，角速度依克卜勒第三定律隨半徑遞減。科幻動態效果：HUD 目標鎖定框每 4.5 秒跳到另一顆行星（放大收合並閃爍鎖定）、恆星下方參考盤定期擴散聲納波紋、能量脈衝沿地板格線朝鏡頭掃過，以及偶爾劃過高空的流星；開啟「減少動態效果」時只保留靜止在最內側行星的鎖定框。引擎依 WebGPU→WebGL2 選擇後端，以獨立 chunk 延遲載入；兩者皆不可用時保留 CSS 背景。為控制 GPU 負載，場景以 1× 解析度、不開 MSAA（保留 FXAA）、最高 24 fps 渲染；系統開啟「減少動態效果」或視窗失去焦點時場景保持靜止，只在切換頁面、主題或視窗大小後重繪；分頁切到背景或視窗最小化時完全停止渲染，回到前景後繼續。
+- 3D 背景：以 [XYZ.js](https://github.com/YueyuHoshizora/XYZ.js) v1.11 渲染全畫面 3D 場景（星空、全像格線地板、行星系統；資料頁以分類數量生成 3D 柱狀天際線），鏡頭隨路由移動、隨滑鼠輕微視差，並跟著深色／淺色切換。地板格線依頁面淡出：會看到行星系統的頁面在系統前方就淡出，避免格線穿過軌道與行星；資料頁保留遠處地板承托柱狀圖。行星系統是一顆帶日冕的藍白恆星，每款遊戲對應一顆行星：行星表面為程式產生的貼圖（岩質、雲層、海洋、氣體巨行星與行星環），只受恆星點光源照明而有晝夜相位，軌道接近共面，角速度依克卜勒第三定律隨半徑遞減。科幻動態效果：HUD 目標鎖定框每 4.5 秒跳到另一顆行星（放大收合並閃爍鎖定）、恆星下方參考盤定期擴散聲納波紋、能量脈衝沿地板格線朝鏡頭掃過，以及偶爾劃過高空的流星；開啟「減少動態效果」時只保留靜止在最內側行星的鎖定框。引擎依 WebGPU→WebGL2 選擇後端，以獨立 chunk 延遲載入；兩者皆不可用時保留 CSS 背景。為控制 GPU 負載，場景以 1× 解析度、不開 MSAA（保留 FXAA）、最高 24 fps 渲染；系統開啟「減少動態效果」或視窗失去焦點時場景保持靜止，只在切換頁面、主題或視窗大小後重繪；分頁切到背景或視窗最小化時完全停止渲染，回到前景後繼續。
 - 背景音樂：原創〈Stellar Drift／星際漂流／星の漂流〉以隨 XYZ.js 附帶的官方 OPM.js 1.1.0 合成；84 BPM、A 小調、16 小節（約 46 秒）循環，以暖低音、柔和 FM 雙音與稀疏鐘聲呼應星空、行星與全像格線。預設音量 **5%**，頁首提供播放／暫停與音量滑桿，偏好存於 `localStorage`。受瀏覽器自動播放限制，首次點擊或按鍵後才啟動；切換一般頁面、語系或主題不會重播，進入遊戲、隱藏分頁或暫存頁面時暫停，返回後續播。音訊獨立於 3D 渲染，只使用一個 AudioContext／AudioWorklet；需要 HTTPS 或 localhost，失敗時可手動重試，不影響網站操作。
 - 樂曲檔案：[`public/music/stellar-drift.json`](public/music/stellar-drift.json) 獨立保存三語曲名、`bpm`、`durationBeats` 與 `tracks`。每個 track 包含官方 OPM `voice`（四個 FM operators／ADSR）及明確的 `notes: [{ note, beat, length }]`；`note` 是 MIDI 音高，`beat` 與 `length` 都以拍為單位。修改編曲只需編輯 JSON；所有音符須在循環長度內，編曲含 release 尾音同時最多八音，避免 OPM 搶音。
 - 遊戲資料於瀏覽器執行時讀取 [GameCatalog](https://github.com/YuStellarGamesStudio/GameCatalog) 的 `allgames.json`、`games/<id>.json` 與 `categories.json`，只顯示 `status` 為 `published` 的遊戲；外部連結與封面只接受 HTTPS 網址。
@@ -39,7 +39,7 @@
 | Vite | 本機開發、正式建置與產物預覽 |
 | npm | 相依套件與 lockfile 管理 |
 | GitHub Actions | 型別檢查、相依套件稽核、建置與部署 |
-| XYZ.js 1.7.0 | 3D 背景渲染；未發佈於 npm，套件已解壓於 `vendor/xyz.js/`，以 `file:` 相依安裝 |
+| XYZ.js 1.11.0 | 3D 背景渲染；未發佈於 npm，套件已解壓於 `vendor/xyz.js/`，以 `file:` 相依安裝 |
 | OPM.js 1.1.0 | 自託管 FM 背景音樂合成；使用 XYZ.js 內附的官方原始發佈檔，不新增 npm 相依套件 |
 | GitHub Pages | 靜態網站發布目標 |
 
@@ -47,7 +47,7 @@
 
 - 建議使用 **Node.js 24**，與 CI 的版本一致；版本設定位於 [`.node-version`](.node-version)。
 - 使用 npm 安裝相依套件；`package.json` 要求 Node.js 24 或以上。
-- `.npmrc` 設定 `install-links=true`，讓 `vendor/xyz.js` 以複製方式安裝，不會連帶安裝該套件的開發相依套件。XYZ.js 的 `package.json` 宣告 Node.js 26 以上，但它只在瀏覽器執行，Node.js 24 安裝時只會出現 engine 警告。
+- `.npmrc` 設定 `install-links=true`，讓 `vendor/xyz.js` 以複製方式安裝，不會連帶安裝該套件的開發相依套件。XYZ.js 的 `package.json` 宣告 Node.js 22 以上，完全相容於本專案的 Node.js 24。
 - 使用 Git 取得專案。
 
 本專案不需要後端服務或自訂部署憑證。不要將私密金鑰或 Token 放入前端程式碼、環境變數產物或靜態檔案；發布後的前端資源可被下載。
@@ -135,7 +135,7 @@ src/
   vite-env.d.ts               # Vite 與環境變數型別宣告
 index.html                    # 網頁入口
 package.json                  # 相依套件與 npm 指令
-vendor/xyz.js/                # XYZ.js v1.7 發佈包（Apache-2.0，來源 SHA-256 已比對 SHA256SUMS）
+vendor/xyz.js/                # XYZ.js v1.11 發佈包（Apache-2.0，來源 SHA-256 已比對 SHA256SUMS）
 .npmrc                        # npm 設定（install-links）
 package-lock.json             # 鎖定相依套件版本
 tsconfig.json                 # TypeScript 設定

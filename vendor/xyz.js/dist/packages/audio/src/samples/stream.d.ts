@@ -1,4 +1,5 @@
 import type { AudioPlayOptions } from '../audio-manager.js';
+import { type AudioVec3 } from './spatial.js';
 export interface AudioStreamOptions extends AudioPlayOptions {
     volume?: number;
     playbackRate?: number;
@@ -11,6 +12,7 @@ export interface AudioStreamOptions extends AudioPlayOptions {
      * headers the Web Audio graph receives silence, so such URLs fail to play instead.
      */
     crossOrigin?: 'anonymous' | 'use-credentials';
+    /** Cancels acquisition, including the initial playback request, until `stream()` resolves. */
     signal?: AbortSignal;
 }
 export type AudioStreamState = 'paused' | 'playing' | 'stopped' | 'ended';
@@ -25,11 +27,16 @@ export declare class AudioStream extends EventTarget {
     private readonly source;
     private readonly gain;
     private readonly release;
+    private readonly activity?;
     private status;
     private level;
     private disposed;
+    private readonly pauseReasons;
+    private readonly panner?;
+    private generation;
+    private pending?;
     /** @internal */
-    constructor(media: HTMLAudioElement, source: MediaElementAudioSourceNode, gain: GainNode, release: (stream: AudioStream) => void, options: AudioStreamOptions);
+    constructor(media: HTMLAudioElement, source: MediaElementAudioSourceNode, gain: GainNode, release: (stream: AudioStream) => void, options: AudioStreamOptions, activity?: ((active: boolean) => void) | undefined);
     get state(): AudioStreamState;
     /** Seconds. */
     get position(): number;
@@ -39,11 +46,16 @@ export declare class AudioStream extends EventTarget {
     set loop(value: boolean);
     get volume(): number;
     set volume(value: number);
+    get position3D(): Readonly<AudioVec3> | undefined;
+    set position3D(value: Readonly<AudioVec3> | undefined);
     get playbackRate(): number;
     set playbackRate(value: number);
-    /** Resolves once playback has started; rejects if the browser refuses (for example autoplay). */
-    play(): Promise<void>;
-    pause(): void;
+    /**
+     * Requests native playback synchronously, preserving the caller's user gesture. Concurrent
+     * calls share one request. A pause/stop supersedes it; late completion cannot restart playback.
+     */
+    play(reason?: string): Promise<void>;
+    pause(reason?: string): void;
     seek(seconds: number): void;
     stop(): void;
     private readonly onEnded;
