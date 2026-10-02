@@ -221,6 +221,13 @@ const LOCK_PERIOD = 4.5;
 const LOCK_ACQUIRE = 0.5;
 const LOCK_HOLD = 3.9;
 const LOCK_MARGIN = 0.1;
+const BASE_FOV = (55 * Math.PI) / 180;
+// Hyperjump on every route change: the lens widens, bloom flares and the floor and dust rush
+// toward the camera, then everything settles back over the duration.
+const JUMP_DURATION = 1.2;
+const JUMP_FOV = (16 * Math.PI) / 180;
+const JUMP_BLOOM = 1.2;
+const JUMP_RUSH = 10;
 // Ship-to-star comm link: a thin beam with data packets running along it, shown while the
 // ship is within range of the star and fading in over the last LINK_FADE units.
 const LINK_RANGE = 22;
@@ -301,6 +308,13 @@ function hash01(n: number): number {
   h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/** Hyperjump intensity in [0, 1] with `left` seconds remaining: a fast rise, then a slow settle. */
+function jumpEnvelope(left: number): number {
+  const progress = 1 - left / JUMP_DURATION;
+  const attack = 0.12;
+  return progress < attack ? progress / attack : (1 - (progress - attack) / (1 - attack)) ** 2;
 }
 
 function circle(radius: number, segments: number): Vec3[] {
@@ -428,6 +442,8 @@ class StageScene extends Scene {
   private readonly link: Line3D;
   private readonly packets: InstancedMesh;
   private readonly flare: Billboard;
+  private readonly baseBloom: number;
+  private readonly lens: PerspectiveCamera;
   // Scratch values reused every frame to avoid per-frame allocation.
   private readonly matrix = new Matrix4();
   private readonly position = new Vector3();
@@ -439,6 +455,10 @@ class StageScene extends Scene {
   /** Lock cycle last shown and the planet it targets; each new cycle hops to another planet. */
   private lockCycle = 0;
   private lockTarget = 0;
+  /** Seconds left of the current hyperjump; zero when none is running. */
+  private jumpLeft = 0;
+  /** How far the floor and dust have drifted toward the camera; it runs faster during a jump. */
+  private flow = 0;
   private view: StageView;
 
   constructor(textures: StageTextures, state: StageState, previous?: StageScene) {
@@ -462,6 +482,7 @@ class StageScene extends Scene {
     this.fog.color = p.fog;
     this.fog.density = p.fogDensity;
     this.postProcessing.enabled = true;
+    this.baseBloom = p.bloom;
     this.postProcessing.bloomStrength = p.bloom;
     this.postProcessing.bloomThreshold = 1;
     this.postProcessing.bloomRadius = 3;
@@ -470,9 +491,10 @@ class StageScene extends Scene {
     this.transparency = 'weighted';
     this.background = EnvironmentMap.gradient({ zenith: p.zenith, horizon: p.horizon, ground: p.ground, width: 128 });
     const camera = new PerspectiveCamera();
-    camera.fov = (55 * Math.PI) / 180;
+    camera.fov = BASE_FOV;
     camera.far = 200;
     this.camera3D = camera;
+    this.lens = camera;
 
     const { matrix: m, position: pos, rotation: rot, size } = this;
 
@@ -731,6 +753,8 @@ class StageScene extends Scene {
       this.floorFade.splice(0, 2, ...previous.floorFade);
       this.lockCycle = previous.lockCycle;
       this.lockTarget = previous.lockTarget % Math.max(1, state.data.games);
+      this.jumpLeft = previous.jumpLeft;
+      this.flow = previous.flow;
     } else {
       this.camera3D.position.set(...SHOTS[this.view].position);
       this.look.set(...SHOTS[this.view].target);
@@ -748,6 +772,8 @@ class StageScene extends Scene {
   }
 
   setView(view: StageView): void {
+    // A still stage has no motion to jump with.
+    if (view !== this.view && this.motion) this.jumpLeft = JUMP_DURATION;
     this.view = view;
   }
 
@@ -758,7 +784,7 @@ class StageScene extends Scene {
 
   private layoutFloor(): void {
     const [start, end] = this.floorFade;
-    const scroll = (this.time * FLOOR_SPEED) % GRID_STEP;
+    const scroll = this.flow % GRID_STEP;
     const cross = this.crossLines;
     const lines = cross.vertices.length / (2 * FLOOR_VERTS_PER_POINT * FLOATS_PER_VERTEX);
     for (let line = 0; line < lines; line++) {
@@ -936,7 +962,7 @@ class StageScene extends Scene {
     const seeds = this.dustSeeds;
     const depth = DUST_MAX[2] - DUST_MIN[2];
     for (let i = 0; i < DUST_COUNT; i++) {
-      const z = DUST_MIN[2] + ((seeds[i * 4 + 2]! + this.time * FLOOR_SPEED) % depth);
+      const z = DUST_MIN[2] + ((seeds[i * 4 + 2]! + this.flow) % depth);
       const radius = seeds[i * 4 + 3]! * Math.max(1e-3, Math.min(1, (z - DUST_MIN[2]) / DUST_FADE, (DUST_MAX[2] - z) / DUST_FADE));
       this.dust.setMatrixAt(i, this.matrix.compose(this.position.set(seeds[i * 4]!, seeds[i * 4 + 1]!, z), this.rotation, this.size.set(radius, radius, radius)));
     }
@@ -949,9 +975,16 @@ class StageScene extends Scene {
     const dt = this.lastTick ? Math.min(0.1, (now - this.lastTick) / 1000) : 0;
     this.lastTick = now;
     const animate = this.motion;
-    if (animate) this.time += dt;
+    if (animate) {
+      this.time += dt;
+      this.jumpLeft = Math.max(0, this.jumpLeft - dt);
+    }
+    const warp = jumpEnvelope(this.jumpLeft);
+    if (animate) this.flow += dt * FLOOR_SPEED * (1 + JUMP_RUSH * warp);
+    this.lens.fov = BASE_FOV + JUMP_FOV * warp;
+    this.postProcessing.bloomStrength = this.baseBloom * (1 + JUMP_BLOOM * warp);
     // Billboard folds width and height into its scale, so the size has to be reapplied here.
-    this.flare.scale.set(FLARE_WIDTH * (1 + 0.05 * Math.sin(this.time * 1.3)), FLARE_HEIGHT * (1 + 0.2 * Math.sin(this.time * 0.7)), 1);
+    this.flare.scale.set(FLARE_WIDTH * (1 + 0.05 * Math.sin(this.time * 1.3)) * (1 + 1.5 * warp), FLARE_HEIGHT * (1 + 0.2 * Math.sin(this.time * 0.7)), 1);
     const ease = animate ? 1 - Math.exp(-dt * 2.2) : 1;
     const follow = animate ? 1 - Math.exp(-dt * 3) : 1;
 
