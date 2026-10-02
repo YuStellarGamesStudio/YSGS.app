@@ -487,7 +487,7 @@ function renderGame(catalog: Catalog | null, id: string): Node[] {
   const back = h('a', { href: HREF.games, class: 'text-link back-link' }, icon('back'), t.back);
   if (!catalog) return [back, statusPanel()];
   const game = catalog.games.find((candidate) => candidate.id === id);
-  if (!game) return [back, h('div', { class: 'status-panel is-error' }, h('h1', { tabindex: -1 }, t.gameNotFound))];
+  if (!game) return renderMissing(catalog, t.gameNotFound);
 
   const text = gameText(game, state.locale);
   const otherNames = [...new Set(locales.map((locale) => game.text[locale]?.name).filter((name): name is string => !!name && name !== text.name))];
@@ -531,7 +531,7 @@ function renderGame(catalog: Catalog | null, id: string): Node[] {
 function renderPlay(catalog: Catalog | null, id: string): Node[] {
   if (!catalog) return [statusPanel()];
   const game = catalog.games.find((candidate) => candidate.id === id);
-  if (!game) return renderMissing();
+  if (!game) return renderMissing(catalog, t.gameNotFound);
   const launchUrl = game.launchUrls[state.locale] ?? game.url;
   // Same-origin scripts must not be able to remove their own sandbox.
   const sandbox = new URL(launchUrl).origin === location.origin
@@ -718,8 +718,29 @@ function panel(title: string, span: string, ...children: Child[]): HTMLElement {
   return h('section', { class: `panel ${span}`.trim() }, h('h2', { class: 'panel-title' }, title), ...children);
 }
 
-function renderMissing(): Node[] {
-  return [h('div', { class: 'status-panel is-error' }, h('h1', { tabindex: -1 }, t.notFound), h('a', { href: HREF.home, class: 'btn btn-primary' }, t.goHome))];
+function renderMissing(catalog: Catalog | null, title = t.notFound): Node[] {
+  const intro = h(
+    'section',
+    { class: 'status-panel missing-panel' },
+    h('p', { class: 'missing-code', 'aria-hidden': 'true' }, '404'),
+    h('h1', { tabindex: -1 }, title),
+    h('p', { class: 'lead' }, t.notFoundLead),
+    h('div', { class: 'hero-actions' }, h('a', { href: HREF.home, class: 'btn btn-primary' }, t.goHome), h('a', { href: HREF.games, class: 'btn btn-ghost' }, t.ctaGames, icon('arrow'))),
+  );
+  if (!catalog) return [intro, statusPanel()];
+  // Reuse the catalog's cached random draw so language changes preserve the selection.
+  const recommendations = featuredGames(catalog).slice(0, 3);
+  if (!recommendations.length) return [intro];
+  return [
+    intro,
+    h(
+      'section',
+      { class: 'section', 'aria-labelledby': 'recommendations-title' },
+      h('div', { class: 'section-head' }, h('h2', { id: 'recommendations-title' }, t.recommendationsTitle), h('a', { href: HREF.games, class: 'text-link' }, t.viewAll, icon('arrow'))),
+      h('p', { class: 'recommendations-lead' }, t.recommendationsLead),
+      h('div', { class: 'game-grid' }, ...recommendations.map(gameCard)),
+    ),
+  ];
 }
 
 // ---------- Render loop ----------
@@ -739,7 +760,7 @@ function render(navigated: boolean, animate = navigated): void {
             ? renderPlay(catalog, route.id)
             : route.view === 'data'
               ? renderData(catalog)
-              : renderMissing();
+              : renderMissing(catalog);
   main.replaceChildren(h('div', { class: `view view-${route.view}` }, ...nodes));
   main.dataset.view = route.view;
   countUp(main, animate);

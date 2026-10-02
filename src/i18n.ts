@@ -97,6 +97,9 @@ const en = {
   footerSource: 'Source code',
   footerData: 'Data: GameCatalog',
   notFound: 'Page not found.',
+  notFoundLead: 'This destination is off the star map. Head home or discover another game.',
+  recommendationsTitle: 'Discover your next game',
+  recommendationsLead: 'A random selection from our game library. Your next adventure might be right here.',
   goHome: 'Return home',
 };
 
@@ -190,6 +193,9 @@ const zhTW: Messages = {
   footerSource: '原始碼',
   footerData: '資料：GameCatalog',
   notFound: '找不到此頁面。',
+  notFoundLead: '這個目的地不在星圖上。返回首頁，或探索另一款遊戲吧。',
+  recommendationsTitle: '探索下一款遊戲',
+  recommendationsLead: '從遊戲庫隨機挑選，下一場冒險也許就在這裡。',
   goHome: '返回首頁',
 };
 
@@ -281,6 +287,9 @@ const ja: Messages = {
   footerSource: 'ソースコード',
   footerData: 'データ：GameCatalog',
   notFound: 'ページが見つかりません。',
+  notFoundLead: 'この目的地は星図にありません。ホームに戻るか、別のゲームを探してみましょう。',
+  recommendationsTitle: '次のゲームを見つけよう',
+  recommendationsLead: 'ゲームライブラリからランダムにピックアップ。次の冒険がここで待っているかもしれません。',
   goHome: 'ホームへ戻る',
 };
 
