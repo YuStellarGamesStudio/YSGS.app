@@ -58,6 +58,8 @@ interface Palette {
   /** Spotlight standing in for starlight on the distant ship; light skies already light it. */
   shipLight: number;
   star: RGB;
+  /** Emissive tint of the meteors that streak across the sky. */
+  meteor: RGB;
   ambient: number;
   sun: number;
   bloom: number;
@@ -87,6 +89,7 @@ const PALETTES: Record<StageTheme, Palette> = {
     starLight: 14,
     shipLight: 200,
     star: [1.6, 1.9, 2.4],
+    meteor: [2.4, 2.8, 3.6],
     ambient: 0.15,
     // Kept dim so the planets' night sides stay dark; the star's point light does the work.
     sun: 0.15,
@@ -113,6 +116,7 @@ const PALETTES: Record<StageTheme, Palette> = {
     starLight: 10,
     shipLight: 30,
     star: [0.1, 0.18, 0.4],
+    meteor: [0.05, 0.35, 0.7],
     ambient: 0.6,
     sun: 1.4,
     bloom: 0.25,
@@ -195,6 +199,11 @@ const PING_PERIOD = 6;
 const PING_SEGMENTS = 128;
 const PING_START = 0.3;
 const PING_DEPTH_RADIUS = 2;
+// Meteors: brief streaks across the upper sky, one per period, each on its own cycle.
+const METEOR_PERIODS = [9, 14];
+const METEOR_LIFE = 1.1;
+const METEOR_SPEED = 14;
+const METEOR_LENGTH = 3.5;
 // Energy pulse racing over the floor grid toward the camera: a band of cross lines as
 // [z offset, strength], sent out once per period.
 const PULSE_BAND: Array<[number, number]> = [
@@ -399,6 +408,7 @@ class StageScene extends Scene {
   private readonly pings: Line3D[] = [];
   /** Per ping point: depth-cue alpha, then the unit circle's cos and sin. */
   private readonly pingShape = new Float32Array(PING_SEGMENTS * 3);
+  private readonly meteors: Line3D[] = [];
   private readonly lock: Billboard;
   private readonly lockSize: number[];
   private readonly systemMatrix: Matrix4;
@@ -647,6 +657,14 @@ class StageScene extends Scene {
       );
     });
 
+    // Meteors, bright at the head and fading along the tail; placeEffects shows them.
+    const meteorMaterial = glow(p.meteor, 1, { transparent: true, alphaMode: 'BLEND' });
+    for (let i = 0; i < METEOR_PERIODS.length; i++) {
+      const meteor = this.add(new Line3D([[0, 0, 0], [1, 0, 0]], { material: meteorMaterial, width: 0.07, visible: false }));
+      fadeLine(meteor, (point) => (point ? 0 : 1));
+      this.meteors.push(meteor);
+    }
+
     // A deep-space hauler cruising through the middle distance.
     this.ship = buildShip({
       hull: new PBRMaterial({ texture: textures.hull, color: p.tintedSurfaces ? [0.62, 0.66, 0.74] : [0.9, 0.91, 0.93], metallic: 0.1, roughness: 0.6, textureSampler: { addressModeU: 'repeat', addressModeV: 'repeat' } }),
@@ -801,6 +819,33 @@ class StageScene extends Scene {
         colors[i * 16 + 11] = colors[i * 16 + 15] = to;
       }
       ping.geometry.markUpdated();
+    }
+
+    // Meteors: each falls at a shallow angle from a random point high in the sky, its tail
+    // growing in behind it and the whole streak flaring and fading over its short life.
+    for (let i = 0; i < this.meteors.length; i++) {
+      const meteor = this.meteors[i]!;
+      const period = METEOR_PERIODS[i]!;
+      const cycles = this.time / period + i * 0.37;
+      const cycle = Math.floor(cycles);
+      const age = (cycles - cycle) * period;
+      meteor.visible = age < METEOR_LIFE;
+      if (!meteor.visible) continue;
+      const seed = cycle * 8 + i * 4099;
+      const side = hash01(seed) < 0.5 ? -1 : 1;
+      const angle = 0.2 + hash01(seed + 1) * 0.35;
+      const dx = Math.cos(angle) * side;
+      const dy = -Math.sin(angle);
+      const travel = age * METEOR_SPEED;
+      const x = -side * (4 + hash01(seed + 2) * 10) + dx * travel;
+      const y = 9.5 + hash01(seed + 3) * 4 + dy * travel;
+      const z = -14 - hash01(seed + 4) * 6;
+      const tail = METEOR_LENGTH * Math.max(0.02, Math.min(1, age / 0.3));
+      meteor.setPoint(0, x, y, z);
+      meteor.setPoint(1, x - dx * tail, y - dy * tail, z);
+      const colors = meteor.geometry.colors!;
+      colors[3] = colors[7] = Math.sin((Math.PI * age) / METEOR_LIFE);
+      meteor.geometry.markUpdated();
     }
 
     // Floor pulse, faded with the grid; past the near edge it is out of every shot.
