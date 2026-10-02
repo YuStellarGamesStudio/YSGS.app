@@ -60,6 +60,8 @@ interface Palette {
   star: RGB;
   /** Emissive tint of the meteors that streak across the sky. */
   meteor: RGB;
+  /** Brightness of the atmosphere rim around non-rocky planets. */
+  air: number;
   ambient: number;
   sun: number;
   bloom: number;
@@ -90,6 +92,7 @@ const PALETTES: Record<StageTheme, Palette> = {
     shipLight: 200,
     star: [1.6, 1.9, 2.4],
     meteor: [2.4, 2.8, 3.6],
+    air: 0.7,
     ambient: 0.15,
     // Kept dim so the planets' night sides stay dark; the star's point light does the work.
     sun: 0.15,
@@ -117,6 +120,7 @@ const PALETTES: Record<StageTheme, Palette> = {
     shipLight: 30,
     star: [0.1, 0.18, 0.4],
     meteor: [0.05, 0.35, 0.7],
+    air: 0.25,
     ambient: 0.6,
     sun: 1.4,
     bloom: 0.25,
@@ -250,18 +254,19 @@ const WAKE_MS = 600;
 // then giants. Kinds repeat if there are more games than entries.
 // `map` is the surface texture width; planets cover a few dozen pixels at most, so only
 // the giants get the larger map.
-const PLANETS: Array<{ paint: Painter; map: number; radius: number; roughness: number; axialTilt: number; ring?: boolean }> = [
+const PLANETS: Array<{ paint: Painter; map: number; radius: number; roughness: number; axialTilt: number; ring?: boolean; air?: RGB }> = [
   { paint: paintRocky, map: 128, radius: 0.06, roughness: 0.95, axialTilt: 0.05 },
-  { paint: paintCloudy, map: 128, radius: 0.09, roughness: 0.9, axialTilt: 0.12 },
-  { paint: paintOcean, map: 128, radius: 0.095, roughness: 0.55, axialTilt: 0.41 },
-  { paint: paintRust, map: 128, radius: 0.075, roughness: 0.95, axialTilt: 0.44 },
-  { paint: paintGiant, map: 256, radius: 0.2, roughness: 0.8, axialTilt: 0.05 },
-  { paint: paintRinged, map: 256, radius: 0.17, roughness: 0.8, axialTilt: 0.47, ring: true },
-  { paint: paintIce, map: 128, radius: 0.13, roughness: 0.7, axialTilt: 0.5 },
+  { paint: paintCloudy, map: 128, radius: 0.09, roughness: 0.9, axialTilt: 0.12, air: [0.9, 0.75, 0.4] },
+  { paint: paintOcean, map: 128, radius: 0.095, roughness: 0.55, axialTilt: 0.41, air: [0.25, 0.55, 1] },
+  { paint: paintRust, map: 128, radius: 0.075, roughness: 0.95, axialTilt: 0.44, air: [0.8, 0.35, 0.2] },
+  { paint: paintGiant, map: 256, radius: 0.2, roughness: 0.8, axialTilt: 0.05, air: [0.85, 0.65, 0.45] },
+  { paint: paintRinged, map: 256, radius: 0.17, roughness: 0.8, axialTilt: 0.47, ring: true, air: [0.9, 0.8, 0.55] },
+  { paint: paintIce, map: 128, radius: 0.13, roughness: 0.7, axialTilt: 0.5, air: [0.4, 0.8, 1] },
 ];
 const STAR_RADIUS = 0.42;
 /** Corona radius in star radii. */
 const CORONA_SCALE = 2.8;
+const ATMOSPHERE_SCALE = 1.6;
 const ORBIT_INNER = 1.05;
 const ORBIT_OUTER = 3.2;
 // Kepler's third law: angular speed falls off as r^-1.5, so inner worlds race ahead.
@@ -443,7 +448,7 @@ class StageScene extends Scene {
   private readonly alongFade: [number, number] = [Number.NaN, Number.NaN];
   private readonly stars: Group;
   private readonly core: Mesh;
-  private readonly planets: Array<{ holder: Group; body: Mesh; trail: Line3D; orbit: Matrix4; drop: Line3D; foot: Line3D; radius: number; speed: number; phase: number; spin: number }> = [];
+  private readonly planets: Array<{ holder: Group; body: Mesh; trail: Line3D; orbit: Matrix4; drop: Line3D; foot: Line3D; halo: Billboard | null; radius: number; speed: number; phase: number; spin: number }> = [];
   private readonly towers: InstancedMesh;
   private readonly scanner: Group;
   private readonly sweep: Group;
@@ -471,6 +476,7 @@ class StageScene extends Scene {
   // Scratch values reused every frame to avoid per-frame allocation.
   private readonly matrix = new Matrix4();
   private readonly position = new Vector3();
+  private readonly haloPosition = new Vector3();
   private readonly rotation = new Quaternion();
   private readonly size = new Vector3();
   private time = 0;
@@ -652,11 +658,21 @@ class StageScene extends Scene {
         new Mesh({ geometry: Geometry.sphere(kind.radius, 32, 16), material: new PBRMaterial({ texture: textures.planets[i % PLANETS.length]!, roughness: kind.roughness }) }),
       );
       if (kind.ring) holder.add(new Mesh({ geometry: Geometry.plane(kind.radius * 4.7, kind.radius * 4.7), material: ringMaterial }));
+      // Reuse the corona falloff, but keep its bright centre inside the planet to preserve night sides.
+      const halo = kind.air
+        ? this.add(
+            new Billboard({
+              material: new PBRMaterial({ texture: textures.corona, color: [0, 0, 0], emissive: scaled(kind.air, p.air), emissiveTexture: textures.corona, transparent: true, alphaMode: 'BLEND' }),
+              width: kind.radius * 2 * ATMOSPHERE_SCALE,
+              height: kind.radius * 2 * ATMOSPHERE_SCALE,
+            }),
+          )
+        : null;
       // Drop line and foot ring live in system space, so they meet the plate square on.
       const drop = system.add(new Line3D([[0, 0, 0], [0, -PLATE_DROP, 0]], { material: dropMaterial, width: 0.008 }));
       fadeLine(drop, (point) => (point ? 0.3 : 1));
       const foot = system.add(new Line3D(circle(FOOT_RADIUS, 16), { material: dropMaterial, width: 0.01, closed: true }));
-      this.planets.push({ holder, body, trail, orbit: plane.transform.updateMatrix(), drop, foot, radius, speed: KEPLER * radius ** -1.5, phase: i * 2.399, spin: 0.4 + orbitRandom() * 0.6 });
+      this.planets.push({ holder, body, trail, orbit: plane.transform.updateMatrix(), drop, foot, halo, radius, speed: KEPLER * radius ** -1.5, phase: i * 2.399, spin: 0.4 + orbitRandom() * 0.6 });
     }
 
     // Reference plate under the system: range rings, spokes fading outward, and the star's axis.
@@ -868,6 +884,10 @@ class StageScene extends Scene {
         const behind = (sweepAngle - Math.atan2(point.z, point.x) + 2 * Math.PI) % (2 * Math.PI);
         const flare = 1 + SWEEP_FLARE * Math.exp(-behind * 2.5);
         s.foot.scale.set(flare, flare, flare);
+      }
+      if (s.halo) {
+        this.systemMatrix.transformPoint(point, this.haloPosition);
+        s.halo.position.copy(this.haloPosition);
       }
     }
   }
