@@ -221,6 +221,16 @@ const LOCK_PERIOD = 4.5;
 const LOCK_ACQUIRE = 0.5;
 const LOCK_HOLD = 3.9;
 const LOCK_MARGIN = 0.1;
+// Ship-to-star comm link: a thin beam with data packets running along it, shown while the
+// ship is within range of the star and fading in over the last LINK_FADE units.
+const LINK_RANGE = 22;
+const LINK_FADE = 6;
+/** The beam ends this far short of the star's centre, outside the scanner ring. */
+const LINK_STOP = 1;
+const LINK_PACKETS = 5;
+/** Packets travel this fraction of the beam per second. */
+const LINK_SPEED = 0.3;
+const LINK_PACKET_SIZE = 0.1;
 // Anamorphic lens streak through the star.
 const FLARE_WIDTH = 8;
 const FLARE_HEIGHT = 0.45;
@@ -415,6 +425,8 @@ class StageScene extends Scene {
   private readonly lock: Billboard;
   private readonly lockSize: number[];
   private readonly systemMatrix: Matrix4;
+  private readonly link: Line3D;
+  private readonly packets: InstancedMesh;
   private readonly flare: Billboard;
   // Scratch values reused every frame to avoid per-frame allocation.
   private readonly matrix = new Matrix4();
@@ -539,6 +551,12 @@ class StageScene extends Scene {
         position: CORE,
       }),
     );
+
+    // Comm link from the ship to the star; placeLink moves and fades it, only in motion.
+    this.link = this.add(new Line3D([[0, 0, 0], [1, 0, 0]], { material: glow(scaled(p.cyan, 0.8), 1, { transparent: true, alphaMode: 'BLEND' }), width: 0.045, visible: false }));
+    fadeLine(this.link, () => 1);
+    this.packets = this.add(new InstancedMesh({ geometry: Geometry.sphere(1, 8, 6), material: glow(p.cyan), count: LINK_PACKETS }));
+    this.packets.visible = false;
 
     // The streak is a stretched corona sprite, so it stays level on screen.
     this.flare = this.add(
@@ -870,6 +888,35 @@ class StageScene extends Scene {
       placeCrossLine(this.pulse, line, z + offset, floorAlpha(z + offset, start, end) * strength);
     }
     this.pulse.markUpdated();
+    this.placeLink();
+  }
+
+  private placeLink(): void {
+    const from = this.ship.root.position;
+    const dx = CORE[0] - from.x;
+    const dy = CORE[1] - from.y;
+    const dz = CORE[2] - from.z;
+    const distance = Math.hypot(dx, dy, dz);
+    const reach = Math.min(1, Math.max(0, (LINK_RANGE - distance) / LINK_FADE));
+    const strength = reach * reach * (3 - 2 * reach);
+    this.link.visible = this.packets.visible = strength > 0;
+    if (!this.link.visible) return;
+    const k = 1 - LINK_STOP / distance;
+    const ex = from.x + dx * k;
+    const ey = from.y + dy * k;
+    const ez = from.z + dz * k;
+    this.link.setPoint(0, from.x, from.y, from.z);
+    this.link.setPoint(1, ex, ey, ez);
+    const colors = this.link.geometry.colors!;
+    colors[3] = colors[7] = strength * 0.9;
+    colors[11] = colors[15] = strength * 0.35;
+    this.link.geometry.markUpdated();
+    for (let i = 0; i < LINK_PACKETS; i++) {
+      const f = (this.time * LINK_SPEED + i / LINK_PACKETS) % 1;
+      // Instance transforms must stay invertible, so a packet never shrinks to exactly zero.
+      const radius = Math.max(1e-3, LINK_PACKET_SIZE * strength * Math.sin(Math.PI * f));
+      this.packets.setMatrixAt(i, this.matrix.compose(this.position.set(from.x + (ex - from.x) * f, from.y + (ey - from.y) * f, from.z + (ez - from.z) * f), this.rotation, this.size.set(radius, radius, radius)));
+    }
   }
 
   private placeShip(): void {
