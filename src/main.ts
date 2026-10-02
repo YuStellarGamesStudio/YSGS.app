@@ -878,6 +878,14 @@ document.addEventListener('pointermove', (event) => {
   target.style.setProperty('--mx', `${event.clientX - box.left}px`);
   target.style.setProperty('--my', `${event.clientY - box.top}px`);
 });
+document.addEventListener('pointerdown', (event) => {
+  if (reducedMotion.matches || !event.isPrimary || event.button !== 0 || document.querySelector('.view-play')) return;
+  const ping = h('span', { class: 'pointer-ping', 'aria-hidden': 'true' });
+  ping.style.left = `${event.clientX}px`;
+  ping.style.top = `${event.clientY}px`;
+  ping.addEventListener('animationend', () => ping.remove(), { once: true });
+  document.body.append(ping);
+});
 
 void startLoading();
 

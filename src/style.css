@@ -1790,6 +1790,30 @@ body::before {
   }
 }
 
+/* A screen-space sonar ping; never intercepts the click that created it. */
+.pointer-ping {
+  position: fixed;
+  width: 24px;
+  height: 24px;
+  z-index: 1000;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--glow), inset 0 0 8px var(--glow);
+  pointer-events: none;
+  animation: pointer-ping 650ms ease-out forwards;
+}
+
+@keyframes pointer-ping {
+  from {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(3.5);
+  }
+}
+
 @media (max-width: 860px) {
   #app::before,
   .kicker-meta {
@@ -1963,6 +1987,9 @@ html:has(.view-play) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pointer-ping {
+    display: none;
+  }
   *,
   *::before,
   *::after {
