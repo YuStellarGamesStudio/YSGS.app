@@ -17,6 +17,8 @@ export interface ShipMaterials {
   /** Exhaust: a soft outer plume and a hot inner core; transparent, faded by vertex alpha. */
   plume: PBRMaterial;
   exhaust: PBRMaterial;
+  /** Sparks streaming out of the drive. */
+  sparks: PBRMaterial;
   port: PBRMaterial;
   starboard: PBRMaterial;
   strobe: PBRMaterial;
@@ -28,6 +30,8 @@ export interface Ship {
   ring: Group;
   /** Anti-collision strobes, flashed by the caller. */
   strobes: Mesh[];
+  /** Advances the exhaust sparks to `time` seconds; stateless, so any time can be shown. */
+  updateExhaust(time: number): void;
 }
 
 // A realistic deep-space hauler, bow toward -X: command module, spinning habitat ring, open
@@ -42,6 +46,12 @@ const SPINE_TO = 2.3;
 const SPINE_HALF = 0.2;
 const SPINE_BAYS = 8;
 const NOZZLE_EXIT = 4.25;
+const SPARK_COUNT = 48;
+/** Seconds from leaving the nozzle to burning out. */
+const SPARK_LIFE = 1.1;
+/** Distance a spark of average speed travels over its life. */
+const SPARK_TRAVEL = 2.8;
+const SPARK_RADIUS = 0.035;
 
 /**
  * Lathes `profile` around the X axis. Repeated points make a hard edge. `alpha`, one value per
@@ -299,5 +309,30 @@ export function buildShip(m: ShipMaterials): Ship {
   light(m.starboard, [2.74, 0, -0.6]);
   const strobes = [light(m.strobe, [-4.12, 0, 0], 0.04), light(m.strobe, [1.55, 1.78, 0]), light(m.strobe, [1.55, -1.78, 0])];
 
-  return { root, ring, strobes };
+  // Exhaust sparks: each one loops on its own phase, speed and heading, widening as it flies
+  // aft and shrinking away as it cools. Low-discrepancy sequences spread them without an RNG.
+  const sparks = root.add(new InstancedMesh({ geometry: Geometry.sphere(1, 6, 4), material: m.sparks, count: SPARK_COUNT }));
+  const fract = (v: number): number => v - Math.floor(v);
+  const sparkSeeds = Array.from({ length: SPARK_COUNT }, (_, i) => ({
+    phase: fract(i * 0.618034),
+    speed: 0.7 + fract(i * 0.754878) * 0.6,
+    spread: fract(i * 0.569840),
+    angle: i * 2.399963,
+  }));
+  const matrix = new Matrix4();
+  const position = new Vector3();
+  const rotation = new Quaternion();
+  const scale = new Vector3();
+  const updateExhaust = (time: number): void => {
+    sparkSeeds.forEach(({ phase, speed, spread, angle }, i) => {
+      const age = fract(time / SPARK_LIFE + phase);
+      const r = spread * (0.06 + age * 0.3);
+      const size = Math.max(1e-3, SPARK_RADIUS * (1 - age) * (0.5 + spread * 0.5));
+      position.set(NOZZLE_EXIT - 0.1 + age * SPARK_TRAVEL * speed, Math.cos(angle) * r, Math.sin(angle) * r);
+      sparks.setMatrixAt(i, matrix.compose(position, rotation, scale.set(size, size, size)));
+    });
+  };
+  updateExhaust(0);
+
+  return { root, ring, strobes, updateExhaust };
 }

@@ -109,7 +109,7 @@ const PALETTES: Record<StageTheme, Palette> = {
     primary: [1.6, 1.8, 2.2],
     corona: [1, 0.97, 0.9],
     orbit: [0.05, 0.2, 0.36],
-    orbitOpacity: 0.55,
+    orbitOpacity: 0.8,
     starLight: 10,
     shipLight: 30,
     star: [0.1, 0.18, 0.4],
@@ -479,8 +479,9 @@ class StageScene extends Scene {
         return (ORBIT_FAR_ALPHA + (1 - ORBIT_FAR_ALPHA) * t * t * (3 - 2 * t)) * factor(point);
       });
     };
-    // Vertex alpha only counts in the transparent pass.
-    const faded = { transparent: true, alphaMode: 'BLEND' as const };
+    // Vertex alpha only counts in the transparent pass. On light skies the lit surface colour
+    // dominates, so keep it as dark as the orbit tint or the lines vanish into the sky.
+    const faded = { transparent: true, alphaMode: 'BLEND' as const, ...(p.tintedSurfaces ? { color: p.orbit } : {}) };
     const orbitMaterial = glow(p.orbit, p.orbitOpacity, faded);
     const trailMaterial = glow(scaled(p.orbit, 2.2), Math.min(1, p.orbitOpacity * 2.6), faded);
     const dropMaterial = glow(scaled(p.orbit, 1.4), Math.min(1, p.orbitOpacity * 1.8), faded);
@@ -575,6 +576,7 @@ class StageScene extends Scene {
       engine: glow(p.primary),
       plume: glow(scaled(p.cyan, 0.7), 1, { transparent: true, alphaMode: 'BLEND', doubleSided: true }),
       exhaust: glow(p.primary, 1, { transparent: true, alphaMode: 'BLEND', doubleSided: true }),
+      sparks: glow(p.primary, 0.85),
       port: glow([3, 0.12, 0.08]),
       starboard: glow([0.1, 3, 0.4]),
       strobe: glow([4, 4, 4]),
@@ -686,6 +688,7 @@ class StageScene extends Scene {
     this.shipLight.position.set(ship.x + toStar.x * SHIP_LIGHT_OFFSET, ship.y + toStar.y * SHIP_LIGHT_OFFSET, ship.z + toStar.z * SHIP_LIGHT_OFFSET);
     this.shipLight.direction.set(-toStar.x, -toStar.y, -toStar.z);
     this.ship.ring.rotation.setFromEuler(this.time * 0.25, 0, 0);
+    this.ship.updateExhaust(this.time);
     const flash = !this.motion || this.time % STROBE_PERIOD < STROBE_FLASH;
     for (const strobe of this.ship.strobes) strobe.visible = flash;
   }

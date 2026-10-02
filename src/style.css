@@ -134,6 +134,16 @@ body {
     linear-gradient(90deg, color-mix(in srgb, var(--bg) 60%, transparent), color-mix(in srgb, var(--bg) 30%, transparent) 55%, transparent 80%);
 }
 
+/* The pale page colour washes out the scene far faster than the dark one, so in
+   landscape the light veil stays behind the text column and off the planetary system. */
+@media (aspect-ratio > 1) {
+  :root[data-theme='light'].has-stage #app::after {
+    background:
+      linear-gradient(to top, color-mix(in srgb, var(--bg) 60%, transparent), transparent 35%),
+      linear-gradient(90deg, color-mix(in srgb, var(--bg) 55%, transparent), color-mix(in srgb, var(--bg) 20%, transparent) 40%, transparent 55%);
+  }
+}
+
 /* Portrait layouts put text under the visual across the full width, so veil
    from the middle down and keep the core at the top clear. */
 @media (max-aspect-ratio: 1/1) {
