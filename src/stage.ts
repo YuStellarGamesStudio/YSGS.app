@@ -221,6 +221,9 @@ const LOCK_PERIOD = 4.5;
 const LOCK_ACQUIRE = 0.5;
 const LOCK_HOLD = 3.9;
 const LOCK_MARGIN = 0.1;
+// Anamorphic lens streak through the star.
+const FLARE_WIDTH = 8;
+const FLARE_HEIGHT = 0.45;
 // Ambient motion reads fine at 24 fps; the display rate would more than double GPU work.
 const FRAME_INTERVAL_MS = 1000 / 24;
 // How long a still (reduced-motion) stage keeps rendering after a change.
@@ -412,6 +415,7 @@ class StageScene extends Scene {
   private readonly lock: Billboard;
   private readonly lockSize: number[];
   private readonly systemMatrix: Matrix4;
+  private readonly flare: Billboard;
   // Scratch values reused every frame to avoid per-frame allocation.
   private readonly matrix = new Matrix4();
   private readonly position = new Vector3();
@@ -532,6 +536,16 @@ class StageScene extends Scene {
         material: new PBRMaterial({ texture: textures.corona, color: [0, 0, 0], emissive: p.corona, emissiveTexture: textures.corona, transparent: true, alphaMode: 'BLEND' }),
         width: coronaSize,
         height: coronaSize,
+        position: CORE,
+      }),
+    );
+
+    // The streak is a stretched corona sprite, so it stays level on screen.
+    this.flare = this.add(
+      new Billboard({
+        material: new PBRMaterial({ texture: textures.corona, color: [0, 0, 0], emissive: scaled(p.cyan, 0.4), emissiveTexture: textures.corona, transparent: true, alphaMode: 'BLEND' }),
+        width: FLARE_WIDTH,
+        height: FLARE_HEIGHT,
         position: CORE,
       }),
     );
@@ -889,6 +903,8 @@ class StageScene extends Scene {
     this.lastTick = now;
     const animate = this.motion;
     if (animate) this.time += dt;
+    // Billboard folds width and height into its scale, so the size has to be reapplied here.
+    this.flare.scale.set(FLARE_WIDTH * (1 + 0.05 * Math.sin(this.time * 1.3)), FLARE_HEIGHT * (1 + 0.2 * Math.sin(this.time * 0.7)), 1);
     const ease = animate ? 1 - Math.exp(-dt * 2.2) : 1;
     const follow = animate ? 1 - Math.exp(-dt * 3) : 1;
 
