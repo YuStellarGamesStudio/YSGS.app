@@ -153,6 +153,70 @@ export function nebulaTexture(seed: number, size = 256): Promise<Texture> {
   return Texture.fromImage(canvas);
 }
 
+/** Tileable spacecraft plating: staggered panels in close greys, fine seams, the odd thermal tile and hatch. */
+export function hullTexture(size = 256): Promise<Texture> {
+  const canvas = new OffscreenCanvas(size, size);
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('2D canvas context unavailable');
+  const cells = 4;
+  const cell = size / cells;
+  for (let row = 0; row < cells; row++) {
+    // Panels never cross the tile edge, so the map repeats without seams.
+    for (let col = 0; col < cells; ) {
+      const span = Math.min(cells - col, 1 + Math.floor(hash(row, col, 7) * 3));
+      const x = col * cell;
+      const y = row * cell;
+      const width = span * cell;
+      const shade = hash(row, col, 13) > 0.92 ? 0.42 : 0.74 + hash(row, col, 11) * 0.12;
+      context.fillStyle = `rgb(${shade * 255} ${shade * 253} ${shade * 248})`;
+      context.fillRect(x, y, width, cell);
+      if (hash(row, col, 3) > 0.75) {
+        context.strokeStyle = 'rgb(120 124 132)';
+        context.lineWidth = 1;
+        context.strokeRect(x + cell * 0.3, y + cell * 0.3, Math.min(width, cell) * 0.4, cell * 0.4);
+      }
+      context.fillStyle = 'rgb(88 92 102)';
+      context.fillRect(x, y, width, 1);
+      context.fillRect(x, y, 1, cell);
+      col += span;
+    }
+  }
+  // Fine grime so large panels do not read as flat fills. Blending four shifted copies of the
+  // noise by position makes it wrap at the tile edges.
+  const image = context.getImageData(0, 0, size, size);
+  const data = image.data;
+  const grimeAt = (u: number, v: number): number => fbm(u * 16, v * 16, 3.1, 3);
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const u = i / size;
+      const v = j / size;
+      const tiled = grimeAt(u, v) * (1 - u) * (1 - v) + grimeAt(u - 1, v) * u * (1 - v) + grimeAt(u, v - 1) * (1 - u) * v + grimeAt(u - 1, v - 1) * u * v;
+      const grime = 0.94 + tiled * 0.12;
+      const o = (j * size + i) * 4;
+      data[o] = Math.min(255, data[o]! * grime);
+      data[o + 1] = Math.min(255, data[o + 1]! * grime);
+      data[o + 2] = Math.min(255, data[o + 2]! * grime);
+    }
+  }
+  context.putImageData(image, 0, 0);
+  return Texture.fromImage(canvas);
+}
+
+/** Radiator panel: coolant channels running along the panel inside a darker frame. */
+export function radiatorTexture(size = 128): Promise<Texture> {
+  const canvas = new OffscreenCanvas(size, size);
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('2D canvas context unavailable');
+  context.fillStyle = 'rgb(200 200 200)';
+  context.fillRect(0, 0, size, size);
+  context.fillStyle = 'rgb(245 245 245)';
+  for (let x = 4; x < size - 4; x += 8) context.fillRect(x, 0, 3, size);
+  context.strokeStyle = 'rgb(130 130 130)';
+  context.lineWidth = 4;
+  context.strokeRect(2, 2, size - 4, size - 4);
+  return Texture.fromImage(canvas);
+}
+
 /** Faint photosphere granulation; tinted by the material's emissive factor. */
 export const paintStar: Painter = (x, y, z) => {
   const v = 0.86 + fbm(x * 14, y * 14, z * 14, 3) * 0.14;

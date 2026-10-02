@@ -1,7 +1,9 @@
-import { Billboard, EnvironmentMap, Game, Geometry, Group, InstancedMesh, Line3D, Matrix4, Mesh, PBRMaterial, PerspectiveCamera, PointLight, Quaternion, Scene, Texture, Vector3 } from 'xyz.js';
+import { Billboard, EnvironmentMap, Game, Geometry, Group, InstancedMesh, Line3D, Matrix4, Mesh, PBRMaterial, PerspectiveCamera, PointLight, Quaternion, Scene, SpotLight, Texture, Vector3 } from 'xyz.js';
 import type { PBRMaterialOptions } from 'xyz.js';
+import { buildShip } from './stage-ship';
+import type { Ship } from './stage-ship';
 import type { Painter } from './stage-textures';
-import { coronaTexture, nebulaTexture, paintCloudy, paintGiant, paintIce, paintOcean, paintRinged, paintRocky, paintRust, paintStar, ringTexture, sphereTexture } from './stage-textures';
+import { coronaTexture, hullTexture, nebulaTexture, paintCloudy, paintGiant, paintIce, paintOcean, paintRinged, paintRocky, paintRust, paintStar, radiatorTexture, ringTexture, sphereTexture } from './stage-textures';
 
 export type StageTheme = 'dark' | 'light';
 export type StageView = 'home' | 'games' | 'game' | 'data' | 'missing';
@@ -53,6 +55,8 @@ interface Palette {
   orbitOpacity: number;
   /** Point-light intensity of the central star; the only light that should reach the planets. */
   starLight: number;
+  /** Spotlight standing in for starlight on the distant ship; light skies already light it. */
+  shipLight: number;
   star: RGB;
   ambient: number;
   sun: number;
@@ -81,6 +85,7 @@ const PALETTES: Record<StageTheme, Palette> = {
     orbit: [0.3, 0.45, 0.65],
     orbitOpacity: 0.3,
     starLight: 14,
+    shipLight: 200,
     star: [1.6, 1.9, 2.4],
     ambient: 0.15,
     // Kept dim so the planets' night sides stay dark; the star's point light does the work.
@@ -106,6 +111,7 @@ const PALETTES: Record<StageTheme, Palette> = {
     orbit: [0.05, 0.2, 0.36],
     orbitOpacity: 0.55,
     starLight: 10,
+    shipLight: 30,
     star: [0.1, 0.18, 0.4],
     ambient: 0.6,
     sun: 1.4,
@@ -139,6 +145,8 @@ const PORTRAIT_SHOTS: Partial<Record<StageView, Shot>> = {
   home: { position: [CORE[0], 3.2, 14], target: [CORE[0], -0.6, 0], floor: [8, -2] },
 };
 const FLOOR_Y = -1.2;
+// Cross lines and near-field dust both drift toward the camera at this speed (units/s).
+const FLOOR_SPEED = 0.8;
 const GRID_HALF_WIDTH = 30;
 const GRID_STEP = 2;
 const GRID_LINE_WIDTH = 0.025;
@@ -162,10 +170,24 @@ const SCANNER_TICKS = 120;
 // Asteroid belt between the rocky inner worlds and the giants.
 const BELT_ROCKS = 220;
 const BELT_WIDTH = 0.16;
-// Capital ship drifting past in the middle distance, as [x, y, z].
+// Deep-space hauler cruising through the middle distance: where it starts, its heading (yaw;
+// the bow points along local -X) and speed. It wraps once SHIP_RANGE units from the start,
+// which is outside every shot.
 const SHIP: Vec3 = [1.5, 5.2, -18];
-const SHIP_LENGTH = 7;
-const SHIP_WINDOW_COLUMNS = 28;
+const SHIP_YAW = 0.35;
+const SHIP_SPEED = 0.15;
+const SHIP_RANGE = 44;
+// The star's point light does not reach that far, so a spotlight on the line from the ship to
+// the star lights the side that faces it.
+const SHIP_LIGHT_OFFSET = 9;
+const STROBE_PERIOD = 1.7;
+const STROBE_FLASH = 0.09;
+// Free-floating dust around the camera; its parallax against the far stars gives depth.
+const DUST_COUNT = 140;
+const DUST_MIN: Vec3 = [-16, -1, -30];
+const DUST_MAX: Vec3 = [16, 9, 6];
+/** Dust grows in and fades out over this distance at either end of its drift. */
+const DUST_FADE = 4;
 // Ambient motion reads fine at 24 fps; the display rate would more than double GPU work.
 const FRAME_INTERVAL_MS = 1000 / 24;
 // How long a still (reduced-motion) stage keeps rendering after a change.
@@ -191,12 +213,16 @@ const ORBIT_INNER = 1.05;
 const ORBIT_OUTER = 3.2;
 // Kepler's third law: angular speed falls off as r^-1.5, so inner worlds race ahead.
 const KEPLER = 0.75;
-// Fading wake behind each planet as [start, end] angles (radians behind it) per opacity step.
-const TRAIL: Array<{ from: number; to: number; opacity: number }> = [
-  { from: 0.12, to: 0, opacity: 1.6 },
-  { from: 0.35, to: 0.12, opacity: 0.9 },
-  { from: 0.75, to: 0.35, opacity: 0.45 },
-];
+// Comet-like wake behind each planet: the radians of orbit it spans as it fades to nothing.
+const TRAIL_LENGTH = 1.1;
+const TRAIL_SEGMENTS = 24;
+// Depth cues. Orbit lines fade on the side away from the home camera, and each planet drops a
+// line to a reference plate this far below the orbital plane, with a ring marking its foot.
+const ORBIT_FAR_ALPHA = 0.18;
+const PLATE_DROP = 0.9;
+const PLATE_RINGS = [1, 2, 3, 3.7];
+const PLATE_SPOKES = 12;
+const FOOT_RADIUS = 0.05;
 
 export interface StageTextures {
   white: Texture;
@@ -205,6 +231,8 @@ export interface StageTextures {
   corona: Texture;
   nebulae: Texture[];
   planets: Texture[];
+  hull: Texture;
+  radiator: Texture;
 }
 
 function scaled(color: RGB, factor: number): RGB {
@@ -237,6 +265,22 @@ function arc(radius: number, from: number, to: number, segments: number): Vec3[]
 function floorAlpha(z: number, start: number, end: number): number {
   const t = Math.min(1, Math.max(0, (z - end) / (start - end)));
   return t * t * (3 - 2 * t);
+}
+
+/**
+ * Gives a Line3D per-point alpha, which fades its emission too. Relies on Line3D's layout:
+ * each segment is a quad of two vertices at its start point, then two at its end point.
+ */
+function fadeLine(line: Line3D, alpha: (point: number) => number): void {
+  const points = line.pointCount;
+  const segments = line.closed ? points : points - 1;
+  const colors = new Float32Array(segments * 16);
+  for (let s = 0; s < segments; s++) {
+    const from = alpha(s);
+    const to = alpha((s + 1) % points);
+    colors.set([1, 1, 1, from, 1, 1, 1, from, 1, 1, 1, to, 1, 1, 1, to], s * 16);
+  }
+  line.geometry.setColors(colors);
 }
 
 interface FloorLine {
@@ -296,12 +340,16 @@ class StageScene extends Scene {
   private readonly alongFade: [number, number] = [Number.NaN, Number.NaN];
   private readonly stars: Group;
   private readonly core: Mesh;
-  private readonly planets: Array<{ holder: Group; body: Mesh; trail: Group; radius: number; speed: number; phase: number; spin: number }> = [];
+  private readonly planets: Array<{ holder: Group; body: Mesh; trail: Line3D; orbit: Matrix4; drop: Line3D; foot: Line3D; radius: number; speed: number; phase: number; spin: number }> = [];
   private readonly towers: InstancedMesh;
   private readonly scanner: Group;
   private belt: Group | null = null;
   private beltSpeed = 0;
-  private readonly ship: Group;
+  private readonly ship: Ship;
+  private readonly shipLight: SpotLight;
+  private readonly dust: InstancedMesh;
+  /** Per dust particle: x, y, z offset into its drift, and radius. */
+  private readonly dustSeeds = new Float32Array(DUST_COUNT * 4);
   private readonly towerHeights: number[];
   // Scratch values reused every frame to avoid per-frame allocation.
   private readonly matrix = new Matrix4();
@@ -381,6 +429,21 @@ class StageScene extends Scene {
       starMesh.setColorAt(i, tint[0], tint[1], tint[2]);
     }
 
+    // Dust drifting past the camera, seeded like the stars.
+    this.dust = this.add(new InstancedMesh({ geometry: Geometry.sphere(1, 6, 4), material: glow(scaled(p.star, 0.45)), count: DUST_COUNT }));
+    const dustRandom = mulberry32(0xd057);
+    for (let i = 0; i < DUST_COUNT; i++) {
+      this.dustSeeds.set(
+        [
+          DUST_MIN[0] + dustRandom() * (DUST_MAX[0] - DUST_MIN[0]),
+          DUST_MIN[1] + dustRandom() * (DUST_MAX[1] - DUST_MIN[1]),
+          dustRandom() * (DUST_MAX[2] - DUST_MIN[2]),
+          0.008 + dustRandom() ** 3 * 0.022,
+        ],
+        i * 4,
+      );
+    }
+
     // Planetary system: a blue-white star lighting one planet per published game.
     // Planets are lit only by the star's point light, so they show real phases.
     const system = this.add(new Group());
@@ -404,8 +467,24 @@ class StageScene extends Scene {
         position: CORE,
       }),
     );
-    const orbitMaterial = glow(p.orbit, p.orbitOpacity);
-    const trailMaterials = TRAIL.map((step) => glow(scaled(p.orbit, step.opacity), Math.min(1, p.orbitOpacity * step.opacity * 1.4)));
+    // Depth cue: alpha from how near each point of a line lies to the home camera, relative to
+    // `radius` around the star, times an optional per-point factor.
+    const toCamera = new Vector3(...SHOTS.home.position).subtract(new Vector3(...CORE)).normalize();
+    const depthFade = (line: Line3D, radius: number, factor: (point: number) => number = () => 1): void => {
+      const world = line.updateWorldMatrix();
+      fadeLine(line, (point) => {
+        world.transformPoint(pos.set(...line.point(point)), pos);
+        const toward = (pos.x - CORE[0]) * toCamera.x + (pos.y - CORE[1]) * toCamera.y + (pos.z - CORE[2]) * toCamera.z;
+        const t = Math.min(1, Math.max(0, toward / radius / 2 + 0.5));
+        return (ORBIT_FAR_ALPHA + (1 - ORBIT_FAR_ALPHA) * t * t * (3 - 2 * t)) * factor(point);
+      });
+    };
+    // Vertex alpha only counts in the transparent pass.
+    const faded = { transparent: true, alphaMode: 'BLEND' as const };
+    const orbitMaterial = glow(p.orbit, p.orbitOpacity, faded);
+    const trailMaterial = glow(scaled(p.orbit, 2.2), Math.min(1, p.orbitOpacity * 2.6), faded);
+    const dropMaterial = glow(scaled(p.orbit, 1.4), Math.min(1, p.orbitOpacity * 1.8), faded);
+    const plateMaterial = glow(p.orbit, p.orbitOpacity * 0.55, faded);
     const ringMaterial = new PBRMaterial({ texture: textures.ring, roughness: 0.9, transparent: true, alphaMode: 'BLEND', doubleSided: true });
     const orbitRandom = mulberry32(0x0b17);
     const count = state.data.games;
@@ -414,11 +493,11 @@ class StageScene extends Scene {
       const radius = count > 1 ? ORBIT_INNER + ((ORBIT_OUTER - ORBIT_INNER) * i) / (count - 1) : (ORBIT_INNER + ORBIT_OUTER) / 2;
       // Real orbits are nearly coplanar: a few degrees of inclination at most.
       const plane = system.add(new Group());
-      plane.rotation.setFromEuler((orbitRandom() - 0.5) * 0.08, 0, (orbitRandom() - 0.5) * 0.08);
+      plane.rotation.setFromEuler((orbitRandom() - 0.5) * 0.14, 0, (orbitRandom() - 0.5) * 0.14);
       // Sub-pixel ribbons break into dashes, so orbits stay about a pixel wide and dim instead.
-      plane.add(new Line3D(circle(radius, 160), { material: orbitMaterial, width: 0.014, closed: true }));
-      const trail = plane.add(new Group());
-      TRAIL.forEach((step, s) => trail.add(new Line3D(arc(radius, -step.from, -step.to, 12), { material: trailMaterials[s]!, width: 0.02 })));
+      depthFade(plane.add(new Line3D(circle(radius, 160), { material: orbitMaterial, width: 0.014, closed: true })), radius);
+      const trail = plane.add(new Line3D(arc(radius, -TRAIL_LENGTH, 0, TRAIL_SEGMENTS), { material: trailMaterial, width: 0.022 }));
+      fadeLine(trail, (point) => (point / TRAIL_SEGMENTS) ** 1.6);
       // The holder keeps the spin axis fixed in space while the planet travels.
       const holder = plane.add(new Group());
       holder.rotation.setFromEuler(kind.axialTilt, orbitRandom() * Math.PI, 0);
@@ -426,8 +505,24 @@ class StageScene extends Scene {
         new Mesh({ geometry: Geometry.sphere(kind.radius, 32, 16), material: new PBRMaterial({ texture: textures.planets[i % PLANETS.length]!, roughness: kind.roughness }) }),
       );
       if (kind.ring) holder.add(new Mesh({ geometry: Geometry.plane(kind.radius * 4.7, kind.radius * 4.7), material: ringMaterial }));
-      this.planets.push({ holder, body, trail, radius, speed: KEPLER * radius ** -1.5, phase: i * 2.399, spin: 0.4 + orbitRandom() * 0.6 });
+      // Drop line and foot ring live in system space, so they meet the plate square on.
+      const drop = system.add(new Line3D([[0, 0, 0], [0, -PLATE_DROP, 0]], { material: dropMaterial, width: 0.008 }));
+      fadeLine(drop, (point) => (point ? 0.3 : 1));
+      const foot = system.add(new Line3D(circle(FOOT_RADIUS, 16), { material: dropMaterial, width: 0.01, closed: true }));
+      this.planets.push({ holder, body, trail, orbit: plane.transform.updateMatrix(), drop, foot, radius, speed: KEPLER * radius ** -1.5, phase: i * 2.399, spin: 0.4 + orbitRandom() * 0.6 });
     }
+
+    // Reference plate under the system: range rings, spokes fading outward, and the star's axis.
+    const plateLine = (points: Vec3[], radius: number, closed: boolean, factor?: (point: number) => number): void => {
+      depthFade(system.add(new Line3D(points, { material: plateMaterial, width: 0.01, closed, position: [0, -PLATE_DROP, 0] })), radius, factor);
+    };
+    const plateRadius = PLATE_RINGS[PLATE_RINGS.length - 1]!;
+    for (const radius of PLATE_RINGS) plateLine(circle(radius, 128), radius, true);
+    for (let k = 0; k < PLATE_SPOKES; k++) {
+      const a = (k / PLATE_SPOKES) * Math.PI * 2;
+      plateLine([[Math.cos(a) * 0.3, 0, Math.sin(a) * 0.3], [Math.cos(a) * plateRadius, 0, Math.sin(a) * plateRadius]], plateRadius, false, (point) => (point ? 0 : 1));
+    }
+    plateLine([[0, PLATE_DROP - STAR_RADIUS * 1.2, 0], [0, 0, 0]], plateRadius, false, (point) => (point ? 0.6 : 0));
 
     // HUD scanner locked onto the star: a ring of ticks counter-rotating under three bright arcs.
     this.scanner = system.add(new Group());
@@ -471,31 +566,23 @@ class StageScene extends Scene {
       );
     });
 
-    // A capital ship drifting through the middle distance: dark hull, lit windows, engine glow.
-    this.ship = this.add(new Group());
-    this.ship.position.set(...SHIP);
-    this.ship.rotation.setFromEuler(0, 0.35, 0);
-    const hull = new PBRMaterial({ texture: white, color: p.tintedSurfaces ? [0.32, 0.38, 0.5] : [0.16, 0.2, 0.28], roughness: 0.45 });
-    const half = SHIP_LENGTH / 2;
-    const hullParts: Array<{ position: Vec3; scale: Vec3 }> = [
-      { position: [0, 0, 0], scale: [SHIP_LENGTH, 0.7, 1.4] },
-      { position: [-half * 0.45, 0.6, 0], scale: [1.6, 0.5, 0.8] },
-      { position: [half * 0.2, -0.45, 0], scale: [SHIP_LENGTH * 0.5, 0.25, 1] },
-      { position: [half + 0.35, 0.1, 0.55], scale: [0.9, 0.4, 0.4] },
-      { position: [half + 0.35, 0.1, -0.55], scale: [0.9, 0.4, 0.4] },
-    ];
-    for (const part of hullParts) this.ship.add(new Mesh({ geometry: Geometry.cube(1), material: hull, position: part.position, scale: part.scale }));
-    const engineMaterial = glow(p.cyan);
-    for (const z of [0.55, -0.55]) this.ship.add(new Mesh({ geometry: Geometry.cube(1), material: engineMaterial, position: [half + 0.85, 0.1, z], scale: [0.12, 0.28, 0.28] }));
-    this.ship.add(new Mesh({ geometry: Geometry.sphere(0.07, 8, 6), material: glow(p.magenta), position: [-half * 0.45, 1.0, 0] }));
-    const windows = this.ship.add(new InstancedMesh({ geometry: Geometry.cube(1), material: glow([2.4, 1.9, 1.1]), count: SHIP_WINDOW_COLUMNS * 2 }));
-    const windowRandom = mulberry32(0x5417);
-    for (let row = 0; row < 2; row++) {
-      for (let i = 0; i < SHIP_WINDOW_COLUMNS; i++) {
-        const lit = windowRandom() > 0.25 ? 1 : 0.001;
-        windows.setMatrixAt(row * SHIP_WINDOW_COLUMNS + i, m.compose(pos.set(-half + 0.3 + (i * (SHIP_LENGTH - 0.6)) / (SHIP_WINDOW_COLUMNS - 1), 0.12 - row * 0.2, 0.71), rot.setFromEuler(0, 0, 0), size.set(0.1 * lit, 0.06 * lit, 0.02)));
-      }
-    }
+    // A deep-space hauler cruising through the middle distance.
+    this.ship = buildShip({
+      hull: new PBRMaterial({ texture: textures.hull, color: p.tintedSurfaces ? [0.62, 0.66, 0.74] : [0.9, 0.91, 0.93], metallic: 0.1, roughness: 0.6, textureSampler: { addressModeU: 'repeat', addressModeV: 'repeat' } }),
+      metal: new PBRMaterial({ texture: white, color: [0.3, 0.32, 0.36], metallic: 0.75, roughness: 0.4, doubleSided: true }),
+      radiator: new PBRMaterial({ texture: textures.radiator, color: [0.9, 0.9, 0.92], roughness: 0.7 }),
+      window: glow([2.4, 1.9, 1.1]),
+      engine: glow(p.primary),
+      plume: glow(scaled(p.cyan, 0.7), 1, { transparent: true, alphaMode: 'BLEND', doubleSided: true }),
+      exhaust: glow(p.primary, 1, { transparent: true, alphaMode: 'BLEND', doubleSided: true }),
+      port: glow([3, 0.12, 0.08]),
+      starboard: glow([0.1, 3, 0.4]),
+      strobe: glow([4, 4, 4]),
+    });
+    this.add(this.ship.root);
+    this.ship.root.rotation.setFromEuler(0, SHIP_YAW, 0);
+    this.shipLight = new SpotLight({ color: [0.88, 0.94, 1], intensity: p.shipLight, range: SHIP_LIGHT_OFFSET + 7, innerAngle: 0.4, outerAngle: 0.55 });
+    this.spotLights.push(this.shipLight);
 
     // Data towers: genre counts as a distant skyline of glowing pillars.
     const counts = state.data.genres.slice(0, TOWER_SLOTS);
@@ -520,6 +607,8 @@ class StageScene extends Scene {
     this.layoutTowers();
     this.layoutFloor();
     this.placePlanets();
+    this.placeShip();
+    this.layoutDust();
   }
 
   setView(view: StageView): void {
@@ -533,7 +622,7 @@ class StageScene extends Scene {
 
   private layoutFloor(): void {
     const [start, end] = this.floorFade;
-    const scroll = (this.time * 0.8) % GRID_STEP;
+    const scroll = (this.time * FLOOR_SPEED) % GRID_STEP;
     const perLine = 2 * FLOOR_VERTS_PER_POINT;
     const cross = this.crossLines;
     const crossColors = cross.colors!;
@@ -574,12 +663,40 @@ class StageScene extends Scene {
   }
 
   private placePlanets(): void {
+    const point = this.position;
     for (const s of this.planets) {
       const a = s.phase + this.time * s.speed;
       s.holder.position.set(Math.cos(a) * s.radius, 0, Math.sin(a) * s.radius);
-      // A Y rotation by -a carries the trail arcs (drawn behind angle 0) to angle a.
+      // A Y rotation by -a carries the trail arc (drawn behind angle 0) to angle a.
       s.trail.rotation.setFromEuler(0, -a, 0);
       s.body.rotation.setFromEuler(0, this.time * s.spin, 0);
+      // The planet in system space, dropped onto the plate.
+      s.orbit.transformPoint(point.copy(s.holder.position), point);
+      s.drop.setPoint(0, point.x, point.y, point.z);
+      s.drop.setPoint(1, point.x, -PLATE_DROP, point.z);
+      s.foot.position.set(point.x, -PLATE_DROP, point.z);
+    }
+  }
+
+  private placeShip(): void {
+    // Cruise along the heading, from SHIP_RANGE behind the start point to SHIP_RANGE past it.
+    const travel = ((this.time * SHIP_SPEED + SHIP_RANGE) % (2 * SHIP_RANGE)) - SHIP_RANGE;
+    const ship = this.ship.root.position.set(SHIP[0] - Math.cos(SHIP_YAW) * travel, SHIP[1], SHIP[2] + Math.sin(SHIP_YAW) * travel);
+    const toStar = this.size.set(CORE[0] - ship.x, CORE[1] - ship.y, CORE[2] - ship.z).normalize();
+    this.shipLight.position.set(ship.x + toStar.x * SHIP_LIGHT_OFFSET, ship.y + toStar.y * SHIP_LIGHT_OFFSET, ship.z + toStar.z * SHIP_LIGHT_OFFSET);
+    this.shipLight.direction.set(-toStar.x, -toStar.y, -toStar.z);
+    this.ship.ring.rotation.setFromEuler(this.time * 0.25, 0, 0);
+    const flash = !this.motion || this.time % STROBE_PERIOD < STROBE_FLASH;
+    for (const strobe of this.ship.strobes) strobe.visible = flash;
+  }
+
+  private layoutDust(): void {
+    const seeds = this.dustSeeds;
+    const depth = DUST_MAX[2] - DUST_MIN[2];
+    for (let i = 0; i < DUST_COUNT; i++) {
+      const z = DUST_MIN[2] + ((seeds[i * 4 + 2]! + this.time * FLOOR_SPEED) % depth);
+      const radius = seeds[i * 4 + 3]! * Math.max(1e-3, Math.min(1, (z - DUST_MIN[2]) / DUST_FADE, (DUST_MAX[2] - z) / DUST_FADE));
+      this.dust.setMatrixAt(i, this.matrix.compose(this.position.set(seeds[i * 4]!, seeds[i * 4 + 1]!, z), this.rotation, this.size.set(radius, radius, radius)));
     }
   }
 
@@ -619,7 +736,8 @@ class StageScene extends Scene {
       this.core.rotation.setFromEuler(0, this.time * 0.04, 0);
       this.scanner.rotation.setFromEuler(0, -this.time * 0.18, 0);
       if (this.belt) this.belt.rotation.setFromEuler(0, this.time * this.beltSpeed, 0);
-      this.ship.position.set(SHIP[0] + Math.sin(this.time * 0.04) * 1.8, SHIP[1], SHIP[2]);
+      this.placeShip();
+      this.layoutDust();
       this.placePlanets();
     }
 
@@ -674,7 +792,9 @@ export async function createStage(canvas: HTMLCanvasElement, initial: StageState
   for (let i = 0; i < NEBULAE.length; i++) nebulae.push(await nebulaTexture(i * 7.3 + 1.7));
   const planets: Texture[] = [];
   for (const kind of PLANETS) planets.push(await sphereTexture(kind.paint, kind.map));
-  const textures: StageTextures = { white, star, ring, corona, nebulae, planets };
+  const hull = await hullTexture();
+  const radiator = await radiatorTexture();
+  const textures: StageTextures = { white, star, ring, corona, nebulae, planets, hull, radiator };
 
   let state = initial;
   let current = new StageScene(textures, state);
