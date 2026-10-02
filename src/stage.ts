@@ -188,6 +188,13 @@ const DUST_MIN: Vec3 = [-16, -1, -30];
 const DUST_MAX: Vec3 = [16, 9, 6];
 /** Dust grows in and fades out over this distance at either end of its drift. */
 const DUST_FADE = 4;
+// Sonar pings: rings sweeping out from under the star across the reference plate, staggered
+// evenly over the period. They share the depth cue of a ring this far out.
+const PING_COUNT = 2;
+const PING_PERIOD = 6;
+const PING_SEGMENTS = 128;
+const PING_START = 0.3;
+const PING_DEPTH_RADIUS = 2;
 // Energy pulse racing over the floor grid toward the camera: a band of cross lines as
 // [z offset, strength], sent out once per period.
 const PULSE_BAND: Array<[number, number]> = [
@@ -389,6 +396,9 @@ class StageScene extends Scene {
   private readonly dustSeeds = new Float32Array(DUST_COUNT * 4);
   private readonly towerHeights: number[];
   private readonly pulse: Geometry;
+  private readonly pings: Line3D[] = [];
+  /** Per ping point: depth-cue alpha, then the unit circle's cos and sin. */
+  private readonly pingShape = new Float32Array(PING_SEGMENTS * 3);
   private readonly lock: Billboard;
   private readonly lockSize: number[];
   private readonly systemMatrix: Matrix4;
@@ -572,6 +582,18 @@ class StageScene extends Scene {
       plateLine([[Math.cos(a) * 0.3, 0, Math.sin(a) * 0.3], [Math.cos(a) * plateRadius, 0, Math.sin(a) * plateRadius]], plateRadius, false, (point) => (point ? 0 : 1));
     }
     plateLine([[0, PLATE_DROP - STAR_RADIUS * 1.2, 0], [0, 0, 0]], plateRadius, false, (point) => (point ? 0.6 : 0));
+    // Sonar pings; like the pulse, only shown in motion.
+    const pingMaterial = glow(p.cyan, 1, { transparent: true, alphaMode: 'BLEND' });
+    for (let k = 0; k < PING_COUNT; k++) {
+      const ping = system.add(new Line3D(circle(PING_DEPTH_RADIUS, PING_SEGMENTS), { material: pingMaterial, width: 0.022, closed: true, position: [0, -PLATE_DROP, 0], visible: this.motion }));
+      depthFade(ping, PING_DEPTH_RADIUS);
+      this.pings.push(ping);
+    }
+    const pingColors = this.pings[0]!.geometry.colors!;
+    for (let i = 0; i < PING_SEGMENTS; i++) {
+      const a = (i / PING_SEGMENTS) * Math.PI * 2;
+      this.pingShape.set([pingColors[i * 16 + 3]!, Math.cos(a), Math.sin(a)], i * 3);
+    }
 
     // HUD scanner locked onto the star: a ring of ticks counter-rotating under three bright arcs.
     this.scanner = system.add(new Group());
@@ -762,6 +784,25 @@ class StageScene extends Scene {
   }
 
   private placeEffects(): void {
+    // Pings: each snaps on, then fades as it spreads to the plate's edge.
+    const shape = this.pingShape;
+    const outer = PLATE_RINGS[PLATE_RINGS.length - 1]!;
+    for (let k = 0; k < this.pings.length; k++) {
+      const ping = this.pings[k]!;
+      const age = (this.time / PING_PERIOD + k / this.pings.length) % 1;
+      const radius = PING_START + age * (outer - PING_START);
+      const life = Math.min(1, age * 10) * (1 - age) ** 2;
+      const colors = ping.geometry.colors!;
+      for (let i = 0; i < PING_SEGMENTS; i++) {
+        ping.setPoint(i, shape[i * 3 + 1]! * radius, 0, shape[i * 3 + 2]! * radius);
+        const from = shape[i * 3]! * life;
+        const to = shape[((i + 1) % PING_SEGMENTS) * 3]! * life;
+        colors[i * 16 + 3] = colors[i * 16 + 7] = from;
+        colors[i * 16 + 11] = colors[i * 16 + 15] = to;
+      }
+      ping.geometry.markUpdated();
+    }
+
     // Floor pulse, faded with the grid; past the near edge it is out of every shot.
     const [start, end] = this.floorFade;
     const z = GRID_FAR + (this.time % PULSE_PERIOD) * PULSE_SPEED;
