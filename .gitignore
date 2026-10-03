@@ -6,3 +6,5 @@ node_modules/
 *.local
 .DS_Store
 /public/opm/
+/playwright-report/
+/test-results/

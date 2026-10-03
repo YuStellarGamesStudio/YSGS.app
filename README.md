@@ -86,6 +86,7 @@ VITE_CATALOG_BASE_URL=http://127.0.0.1:8787/ npm run dev
 | `npm run build` | 建立正式產物，複製 Pages 標記檔案，產生 sitemap 與 service worker |
 | `npm run preview` | 在本機預覽既有的正式產物 |
 | `npm run check` | 依序執行型別檢查、相依套件稽核及正式建置 |
+| `npm run test:browser` | 以 Chromium、Firefox、WebKit 驗證已建置的網站 |
 
 提交變更前，建議執行與 CI 相同的檢查：
 
@@ -97,7 +98,11 @@ npm run preview
 
 `npm run preview` 不會先執行建置，必須已有 `dist` 產物；它是本機預覽工具，不是正式環境伺服器。
 
-相依套件稽核包含開發相依套件，需要連線至 npm registry 的稽核服務。高風險、嚴重弱點或稽核服務失敗會阻擋後續建置；較低等級的警告仍需評估。稽核通過不代表網站沒有弱點，目前也沒有另外定義自動化應用程式測試套件。
+相依套件稽核包含開發相依套件，需要連線至 npm registry 的稽核服務。高風險、嚴重弱點或稽核服務失敗會阻擋後續建置；較低等級的警告仍需評估。稽核通過不代表網站沒有弱點。
+
+瀏覽器測試使用鎖定的 Playwright，第一次先執行 `npx playwright install --with-deps chromium firefox webkit`，再執行 `npm run check` 與 `npm run test:browser`。測試自動啟動正式產物預覽（`127.0.0.1:4183`）；只跑單一瀏覽器可加上 `-- --project=chromium`（或 `firefox`／`webkit`）。
+
+`tests/browser/site.spec.ts` 使用固定目錄輸入與隔離的測試遊戲頁，驗證三語切換不重新載入、主題偏好保存、History 導覽、跨語搜尋／分類篩選、未發布與不安全 URL 排除、外部文字不當作 HTML、遊玩退出確認、音樂播放／暫停與遊玩期間停用，以及 404 的索引限制與推薦。Service worker 在這組測試中停用，以隔離快取；測試不證明離線行為、實體音訊輸出或硬體 GPU 效能。
 
 ## 專案結構
 
@@ -140,6 +145,8 @@ vendor/xyz.js/                # XYZ.js v1.13 發佈包（Apache-2.0，來源 SHA
 .npmrc                        # npm 設定（install-links）
 package-lock.json             # 鎖定相依套件版本
 tsconfig.json                 # TypeScript 設定
+playwright.config.ts          # 三瀏覽器測試與正式產物預覽設定
+tests/browser/site.spec.ts    # 隔離目錄輸入的網站行為測試
 .node-version                 # CI 使用的 Node.js 版本
 CNAME                         # 自訂網域記錄：ysgs.app
 .nojekyll                     # 空的 Pages 標記檔案
@@ -161,7 +168,18 @@ LICENSE                       # 授權條款
 - 在 GitHub Actions 手動執行。
 - 被 Pages workflow 作為可重用工作流程呼叫。
 
-流程使用 Node.js 24，執行 `npm ci` 與 `npm run check`。只有 Pages 流程呼叫並要求上傳時，才會將成功建置的 `dist` 打包為 Pages artifact。
+流程使用 Node.js 24，在 Ubuntu 24.04 x64 執行 `npm ci` 與 `npm run check`，將同一份成功建置的 `dist` 分享給下列 **18 組 OS × 瀏覽器**工作，不在各平台重新建置：
+
+| OS runner | 架構 | 瀏覽器 |
+| --- | --- | --- |
+| `macos-26` | ARM64 | Chromium、Firefox、WebKit |
+| `windows-11-arm` | ARM64 | Chromium、Firefox、WebKit |
+| `ubuntu-24.04`、`ubuntu-24.04-arm` | x64、ARM64 | Chromium、Firefox、WebKit |
+| `ubuntu-26.04`、`ubuntu-26.04-arm` | x64、ARM64 | Chromium、Firefox、WebKit |
+
+各工作安裝對應瀏覽器及系統相依套件，保留 HTML 報告與失敗時的 trace／截圖七天。任何一組失敗都會阻擋 Pages 部署；`fail-fast: false` 讓其他組仍完成診斷。只有 Pages 流程呼叫並要求上傳時，才會另外打包 Pages artifact。
+
+平台標籤依 [GitHub runner 文件](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)，Playwright 1.63 支援 Ubuntu 26.04。WebKit 是 Playwright 的引擎版本，不等於原生 Safari；Playwright 在 Windows ARM runner 上使用 x64 瀏覽器，透過 Windows 模擬執行，不宣稱原生 ARM 瀏覽器覆蓋。矩陣已配置不代表各平台已在 GitHub 執行成功，須以 workflow 結果確認。
 
 ### GitHub Pages 部署
 
@@ -171,7 +189,7 @@ LICENSE                       # 授權條款
 推送 main／手動執行 main
         ↓
 呼叫 CI：安裝 → 型別檢查 → 相依套件稽核 → 建置
-        ↓ 成功後
+        ↓ 分享同一份 dist → 18 組瀏覽器驗證全部成功
 上傳 dist artifact
         ↓
 部署至 GitHub Pages

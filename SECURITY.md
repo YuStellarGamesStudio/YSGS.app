@@ -36,6 +36,8 @@ The following remain unverified:
 
 Local verification on 2026-10-01 completed `npm ci` and `npm run check` using Node.js 24.21.0. Type checking and production building passed, and npm audit reported zero known dependency vulnerabilities at that time. Actionlint 1.7.12 accepted both workflow definitions. The built homepage was exercised in local Chromium at desktop and mobile viewport sizes, including its TypeScript behavior and published marker files.
 
+Local verification on 2026-10-04 passed `npm run check` with the pinned Playwright 1.63.0 dependency and all 12 browser scenarios on macOS ARM64 (four scenarios each in Chromium, Firefox and WebKit). Actionlint 1.7.12 accepted the workflows using a temporary additional-label inventory for the documented Ubuntu 26.04 GitHub-hosted runners, which that validator version predates. Interactive local Chromium also exercised the built site's language switching and games navigation. Windows and Linux matrix execution remains unverified until the updated workflow runs on GitHub; local results do not establish all-platform success.
+
 These checks do not establish the absence of vulnerabilities or prove a successful GitHub Pages deployment. No live website security scan or penetration test was performed. Registry advisory coverage and the local environment limit the conclusions that can be drawn; re-evaluate the baseline as the website changes.
 
 ## 3. Scope and Supported Versions
@@ -256,13 +258,15 @@ XYZ.js is vendored from the official v1.13 release (package version 1.13.0), inc
 
 The committed workflows use the following build and deployment model:
 
-- `.github/workflows/ci.yml` runs on pull requests targeting `main`, manual dispatch, and reusable workflow calls. It uses Node.js 24, `npm ci`, strict TypeScript checking, dependency auditing, and a Vite production build.
+- `.github/workflows/ci.yml` runs on pull requests targeting `main`, manual dispatch, and reusable workflow calls. It uses Node.js 24, `npm ci`, strict TypeScript checking, dependency auditing, and a Vite production build on Ubuntu 24.04 x64. Eighteen subsequent jobs exercise that exact build with Playwright Chromium, Firefox and WebKit on macOS 26 ARM64, Windows 11 ARM64, and Ubuntu 24.04/26.04 x64 and ARM64. Browser-job failures block the reusable workflow and dependent deployment.
 - `.github/workflows/pages.yml` runs on pushes to `main` or manual dispatch, including dispatches from the scheduler below. Its jobs are gated to `main`, and it calls the same CI workflow to produce the Pages artifact rather than rebuilding after validation.
 - `.github/workflows/scheduled-deploy.yml` runs on a five-minute schedule (`*/5 * * * *`) to keep the sitemap in step with the GameCatalog. Its only job has `actions: write` and runs `gh workflow run pages.yml --ref main` with `GITHUB_TOKEN`, so the resulting Pages run is attributed to `github-actions[bot]`. GitHub may delay or skip scheduled runs.
 - Only the deployment job receives `pages: write` and `id-token: write`; the build uses `contents: read`. Checkout does not persist repository credentials. No custom deployment secret is required by these workflow definitions.
 - The deployment depends on successful CI and publishes only `dist`, including the existing domain marker files, through GitHub's official Pages artifact and deployment actions.
 - Actions are pinned to resolved commit SHAs. The deployment targets the `github-pages` environment, with concurrency configured not to interrupt an active Pages run.
 - No `pull_request_target` workflow or privileged pull-request deployment is defined.
+- Browser jobs use isolated synthetic catalog inputs and a synthetic game page, without production writes or credentials. Service workers are blocked for deterministic network interception, so this suite does not verify offline caching. It exercises language/theme persistence, routing, catalog input boundaries, exit confirmation and music state transitions; it does not certify physical audio output, hardware GPU performance or native Safari. Windows ARM jobs use Playwright's x64 browser builds under Windows emulation, not native ARM browser binaries.
+- Browser reports and failure traces/screenshots are uploaded with seven-day retention; the checked build artifact has one-day retention. Keep test data synthetic and do not introduce secrets or personal information into captured pages or network requests.
 
 These are source-level configuration facts, not proof of a successful GitHub-hosted run. Repository owners must select **GitHub Actions** as the Pages publishing source and verify the custom domain, HTTPS, environment rules, and branch protections separately.
 
