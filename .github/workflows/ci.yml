@@ -54,7 +54,7 @@ jobs:
           retention-days: 1
 
   browsers:
-    name: ${{ matrix.os }} / ${{ matrix.browser }}
+    name: ${{ matrix.os }} ／ ${{ matrix.browser }}
     needs: check
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
