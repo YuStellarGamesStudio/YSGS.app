@@ -5,6 +5,7 @@ import {
   readdir,
   readFile,
   lstat,
+  realpath,
   writeFile,
 } from 'node:fs/promises';
 import { resolve, dirname, join } from 'node:path';
@@ -79,6 +80,21 @@ export async function createGame(args) {
       errorOnExist: true,
       force: false,
     });
+  await cp(
+    join(root, 'scripts/offline-deployment.mjs'),
+    join(target, 'scripts/offline-deployment.mjs'),
+    { errorOnExist: true, force: false },
+  );
+  await cp(join(root, 'scripts/offline'), join(target, 'scripts/offline'), {
+    recursive: true,
+    errorOnExist: true,
+    force: false,
+  });
+  await cp(
+    join(root, 'scripts/deployment-server.mjs'),
+    join(target, 'scripts/deployment-server.mjs'),
+    { errorOnExist: true, force: false },
+  );
   await mkdir(join(target, 'vendor'), { recursive: true });
   const dependency = packageInfo.directory
     ? 'vendor/xyz.js'
@@ -107,9 +123,11 @@ export async function createGame(args) {
     `Created ${template} game at ${target}\nNext: pnpm --dir "${target}" install && pnpm --dir "${target}" dev\nBuild: pnpm --dir "${target}" build\nNo install, publish, or external command was run.`,
   );
 }
+// Normalize both paths: native realpath expands Windows 8.3 aliases unlike the ESM loader.
 if (
   process.argv[1] &&
-  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  (await realpath(process.argv[1]).catch(() => undefined)) ===
+    (await realpath(fileURLToPath(import.meta.url)))
 ) {
   createGame(process.argv.slice(2)).catch((error) => {
     console.error(error.message);

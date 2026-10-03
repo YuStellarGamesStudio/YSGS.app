@@ -6,6 +6,9 @@ export declare const nativeMaterial3DLimits: Readonly<{
     textures: 4;
     sourceCharacters: 65536;
 }>;
+/** Stable per-map UV uniform order: two vec4 values per affine coordinate mapping. */
+export declare const materialTextureSlots: readonly ["texture", "metallicRoughness", "normal", "occlusion", "emissive", "specular", "specularColor", "clearcoat", "clearcoatRoughness", "clearcoatNormal", "sheenColor", "sheenRoughness", "transmission", "thickness"];
+export declare const MATERIAL_UV_FLOAT_COUNT: number;
 /** Shared vec4-aligned light block used by both graphics backends. Offsets are floats. */
 export declare const POINT_LIGHT_OFFSET = 12;
 export declare const POINT_LIGHT_STRIDE = 8;
@@ -51,8 +54,11 @@ export declare const shadowLimits: Readonly<{
     far: 50;
     cascadeDistance: 100;
     cascadeLambda: 0.5;
+    cascadeBlend: 0.1;
+    slopeBias: 1;
+    maximumSlopeBias: 0.05;
 }>;
-/** Shadow atlas header (12 vec4) and one matrix for every budgeted tile. */
+/** Shadow atlas header (12 vec4), matrices, then quality controls (one vec4). */
 export declare const SHADOW_FLOAT_COUNT: number;
 export declare const fxaaDefaults: Readonly<{
     enabled: false;

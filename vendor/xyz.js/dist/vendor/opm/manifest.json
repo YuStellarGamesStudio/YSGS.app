@@ -1,9 +1,9 @@
 {
   "name": "OPM.js",
-  "version": "1.1.0",
-  "release": "https://github.com/YueyuHoshizora/OPM.js/releases/tag/v1.1.0",
-  "archive": "https://github.com/YueyuHoshizora/OPM.js/releases/download/v1.1.0/opm.js-1.1.0.tgz",
-  "sha256": "1344a3c2e6e2904b32cd273854ededca318e9a25e97bca20bfc5d331a3b8121e",
-  "checksums": "https://github.com/YueyuHoshizora/OPM.js/releases/download/v1.1.0/SHA256SUMS",
+  "version": "1.11.1",
+  "release": "https://github.com/JS-PACKAGE/OPM.js/releases/tag/v1.11.1",
+  "archive": "https://github.com/JS-PACKAGE/OPM.js/releases/download/v1.11.1/opm.js-1.11.1.tgz",
+  "sha256": "4f5ccfcc499c5100645bba97caf9a80d6d2a6e5229c404fc11006ee1a785d58e",
+  "checksums": "https://api.github.com/repos/JS-PACKAGE/OPM.js/releases/assets/607739972",
   "contents": "Complete official dist/ and LICENSE, without modifications"
 }

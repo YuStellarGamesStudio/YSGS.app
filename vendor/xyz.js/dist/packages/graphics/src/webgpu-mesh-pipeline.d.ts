@@ -68,6 +68,7 @@ export declare class WebGPUMeshPipeline {
     private backgroundView;
     private readonly lightingData;
     private readonly atlas;
+    private readonly shadowCache;
     private readonly shadowBuffer;
     private readonly sheenBuffer;
     private readonly projectionBuffer;
@@ -152,6 +153,7 @@ export declare class WebGPUMeshPipeline {
     private ensureDepth;
     private cacheGeometry;
     private syncGeometryColors;
+    private syncGeometryUV;
     private cacheMesh;
     private cacheSampler;
     private cacheOpticalMaps;

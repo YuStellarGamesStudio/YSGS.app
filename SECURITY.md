@@ -4,7 +4,7 @@
 **Domain:** ysgs.app  
 **Repository:** https://github.com/YuStellarGamesStudio/YSGS.app  
 **Policy status:** Initial policy; subject to ongoing review  
-**Last updated:** 2026-10-02
+**Last updated:** 2026-10-04
 
 ## 1. Purpose and Interpretation
 
@@ -222,7 +222,7 @@ On the same date, `https://ysgs.app/`, `https://www.ysgs.app/`, `https://data.ys
 - If data collection is introduced, document access, retention, deletion, and relevant disclosures. Do not invent legal compliance claims.
 - Do not assume browser storage is safe for secrets; code running in the same origin may be able to access it.
 
-Background music uses the official OPM.js 1.1.0 release already vendored with XYZ.js. The build copies its complete distribution and license to same-origin static assets, alongside the repository-authored JSON score; playback does not fetch a third-party music service or request microphone access. The music controller checks note ranges and timing, and official OPM validates the FM voices. Playback waits for user interaction, defaults to 5% volume, and suspends on game routes or hidden pages. Changes to the score, synthesizer release, worklet loading paths or browser-stored preferences must preserve these boundaries. Local Chromium checks observed real AudioWorklet output, live gain control, pause/resume and game-route suspension. Synthetic visibility/BFCache events and an accelerated score exercised lifecycle handlers and loop rollover; these do not certify native BFCache, background-tab behavior across browsers, or physical speaker audibility.
+Background music uses the official OPM.js 1.11.1 release already vendored with XYZ.js. The build copies its complete distribution and license to same-origin static assets, alongside the repository-authored JSON score; playback does not fetch a third-party music service or request microphone access. The music controller checks note ranges and timing, and official OPM validates the FM voices. Playback waits for user interaction, defaults to 5% volume, and suspends on game routes or hidden pages. Changes to the score, synthesizer release, worklet loading paths or browser-stored preferences must preserve these boundaries. Local Chromium checks observed real AudioWorklet output, live gain control, pause/resume and game-route suspension. Synthetic visibility/BFCache events and an accelerated score exercised lifecycle handlers and loop rollover; these do not certify native BFCache, background-tab behavior across browsers, or physical speaker audibility.
 
 ## 7. Dependencies and Supply-Chain Security
 
@@ -238,6 +238,8 @@ When dependencies or build tooling are introduced:
 - Document exceptions with a reason, compensating controls, an owner, and a review condition. Avoid indefinite blanket suppression.
 
 The committed CI workflow runs `npm audit --audit-level=high` against the locked dependency tree, including development dependencies. High or critical advisories, audit service failures, type-check failures, and build failures block that workflow and its dependent Pages deployment. Lower-severity advisories do not fail this audit threshold and still require assessment. npm audit relies on registry advisory data and does not replace source review or establish website exploitability. No scheduled audit, software bill of materials, or automated dependency update service is configured in this repository.
+
+XYZ.js is vendored from the official v1.13 release (package version 1.13.0), including OPM.js 1.11.1. The downloaded archive SHA-256 was verified against the release SHA256SUMS: `353d97d6e8fe16346fc75db04e1263bcd774fef370425d6fe1c9fe80136db915`. Local verification on 2026-10-04 passed `npm run check` and exercised the built homepage, data-page 3D scene, theme switching, and music playback state in Chromium without browser console errors. This does not establish an upstream source audit or a deployed update.
 
 ## 8. Repository, CI/CD, Hosting, and Domain Security
 
