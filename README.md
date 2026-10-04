@@ -190,13 +190,13 @@ LICENSE                       # 授權條款
 推送 main／手動執行 main
         ↓
 呼叫 CI：安裝 → 型別檢查 → 相依套件稽核 → 建置
-        ↓ 分享同一份 dist → 18 組瀏覽器驗證全部成功
-上傳 dist artifact
+        ↓ CI 結束（不論成功、失敗或取消）
+獨立安裝與 production build → 上傳 dist artifact
         ↓
 部署至 GitHub Pages
 ```
 
-部署使用 CI 已檢查過的產物，不另外重建。檢查失敗時，部署工作不會執行。
+部署工作使用 `always()`，不受 CI 的型別檢查、相依套件稽核或瀏覽器驗證結果阻擋，並獨立執行 `npm ci` 與 `npm run build`。這代表未通過檢查的版本也可能上線；安裝、production build、artifact 上傳或 Pages 部署本身失敗時，仍無法完成發布。GitHub 的權限與 environment 限制仍適用。
 
 安全與發布設定包括：
 

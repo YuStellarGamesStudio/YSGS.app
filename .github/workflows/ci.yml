@@ -5,12 +5,6 @@ on:
     branches: [main]
   workflow_dispatch:
   workflow_call:
-    inputs:
-      upload-pages-artifact:
-        description: Upload the checked build for GitHub Pages deployment
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -44,13 +38,6 @@ jobs:
           name: checked-site
           path: dist
           if-no-files-found: error
-          retention-days: 1
-
-      - name: Upload checked Pages artifact
-        if: ${{ inputs.upload-pages-artifact }}
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
-        with:
-          path: dist
           retention-days: 1
 
   browsers:
