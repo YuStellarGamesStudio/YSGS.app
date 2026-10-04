@@ -168,14 +168,70 @@ const en = {
   ],
   termsTitle: 'Terms of Service',
   termsUpdated: 'Last updated: October 4, 2026',
-  termsLead: 'These terms apply to your use of YSGS Games (ysgs.app), operated by YuStellarGamesStudio, including the installable app. By using the website, you agree to these terms. If you do not agree, please stop using it.',
+  termsLead: 'These Terms of Service govern your use of YSGS Games (ysgs.app), operated by YuStellarGamesStudio, including all of its pages, its offline mode, and the app installed from it through your browser. Please read them carefully. By using the website, you agree to these terms; if you do not agree, please stop using it.',
   termsSections: [
-    { title: 'The service', body: 'YSGS Games is a free website for discovering browser games and launching them in an embedded frame. It requires no account. Game information comes from GameCatalog. Features, listed games, and the service itself may be changed, suspended, or discontinued at any time without notice.' },
-    { title: 'Acceptable use', body: 'Use the website lawfully and in a way that does not harm others. Do not attempt to disrupt, overload, or gain unauthorized access to the website, its hosting, data.ysgs.app, or game providers; bypass its security restrictions; or use it to distribute malware or infringing content. Report security issues privately as described in SECURITY.md rather than exploiting them.' },
-    { title: 'Third-party games and services', body: 'Games are created and operated by their respective providers, not by YuStellarGamesStudio unless stated otherwise. Their content, availability, age suitability, purchases, and data handling are governed by the providers’ own terms and privacy notices. A listing is not an endorsement or guarantee. External links lead to independently operated services, and we are not responsible for their content or practices.' },
-    { title: 'Intellectual property and source code', body: 'The website’s source code is available under the GNU Affero General Public License v3.0 (AGPL-3.0); your rights to that code are governed by that license. Games, covers, names, and other third-party materials belong to their respective owners and are not licensed to you by these terms. The YSGS Games and YuStellarGamesStudio names and logos may not be used to imply endorsement without permission.' },
-    { title: 'Disclaimer and limitation of liability', body: 'The website is provided “as is” and “as available,” without warranties of any kind, including availability, accuracy, or fitness for a particular purpose. To the extent permitted by applicable law, YuStellarGamesStudio is not liable for indirect or consequential damages, or for losses arising from third-party games, services, or outages. Nothing in these terms limits rights that cannot be limited under applicable law.' },
-    { title: 'Changes and contact', body: 'We may update these terms and will change the date above when we do. Continuing to use the website after an update means you accept the revised terms. For questions, use the website repository linked below; GitHub issues are public, so do not post personal or confidential information. English, Traditional Chinese, and Japanese versions describe the same terms.' },
+    { title: 'Agreement and scope', body: [
+      'These terms form an agreement between you and YuStellarGamesStudio about the website. The Privacy Statement, linked in the footer, explains how information is handled and forms part of these terms.',
+      'These terms do not govern games opened in the player, GitHub, or other external services; those are operated under their own terms, which apply when you use them. A game published by YuStellarGamesStudio on another domain may also have its own terms, which apply to that game.',
+    ] },
+    { title: 'Age and capacity', body: [
+      'The website does not ask for your age. If you are under the age at which you can enter into a binding agreement where you live, use the website only with the permission of a parent or guardian, who accepts these terms on your behalf. Individual games may have their own age ratings or requirements, which you must follow.',
+    ] },
+    { title: 'The service', body: [
+      'YSGS Games is a free website for discovering browser games. It lets you browse and search the game catalog, view game details, launch games in an embedded player, explore catalog statistics on the Data page, play optional background music, use the website offline with previously saved copies, and install it as an app.',
+      'The website requires no account and charges no fees. It does not sell anything itself; any purchase, subscription, or account offered inside a game is a matter between you and that game’s provider.',
+    ] },
+    { title: 'Availability and changes', body: [
+      'We may add, change, or remove features, pages, and listed games, or suspend or discontinue the website, at any time and without notice. The website depends on hosting, network, and catalog services that may be unavailable, and we do not guarantee that it will be available at any particular time, uninterrupted, or free of errors.',
+      'Offline copies show the most recent version your browser saved and may be out of date. Games cannot be played offline.',
+    ] },
+    { title: 'Catalog information', body: [
+      'Game names, descriptions, categories, tags, covers, and links come from the GameCatalog dataset. We try to keep them accurate, but they may be incomplete, outdated, or wrong, and they are not an offer by any game provider. Check important details, such as content, system requirements, or prices, with the game provider.',
+      'We may correct, hide, or remove any listing at our discretion, including at the request of a rights holder or game provider.',
+    ] },
+    { title: 'Acceptable use', body: [
+      'Use the website only lawfully and in a way that does not harm the website, other people, or service providers. In particular, you must not: (1) attempt to gain unauthorized access to, disrupt, or overload the website, its hosting, data.ysgs.app, or game providers; (2) bypass, disable, or probe the website’s security controls, including the game sandbox and its refusal to be embedded, except as permitted by SECURITY.md; (3) send automated requests at a volume or rate that degrades the service for others; (4) present a copy or modified version of the website in a way that could be mistaken for the official ysgs.app; (5) use the website to distribute malware, spam, or unlawful or infringing content; or (6) misrepresent your affiliation with YuStellarGamesStudio or a game provider.',
+    ] },
+    { title: 'Security research', body: [
+      'If you find a vulnerability, report it privately as described in SECURITY.md in the website repository. Do not exploit it, access other people’s data, or disclose it publicly before it has been addressed. SECURITY.md does not authorize testing of third-party infrastructure, such as GitHub, Cloudflare, or game providers, and these terms do not grant any such permission.',
+    ] },
+    { title: 'Third-party games', body: [
+      'Games are created and operated by their respective providers. Unless YuStellarGamesStudio is identified as the provider, it does not create, operate, or control them. Each game’s content, availability, age suitability, accounts, advertising, purchases, and data handling are governed by its provider’s terms and privacy notice, which you should review before playing.',
+      'A listing is not an endorsement, recommendation, or guarantee of a game’s quality, safety, or legality. The player’s sandbox limits what games can do in your browser, but it does not make them safe or vet their content. Contact the game provider about problems with a game. If you believe a listing is harmful, unlawful, or misleading, let us know through the website repository so we can review it.',
+    ] },
+    { title: 'External links', body: [
+      'The website links to GitHub repositories, game providers, and other external websites. They are operated independently under their own terms and policies, and we are not responsible for their content, availability, or practices.',
+    ] },
+    { title: 'Intellectual property', body: [
+      'The website’s source code is published in its repository under the GNU Affero General Public License v3.0 (AGPL-3.0), and your rights to copy, modify, and distribute that code are governed by that license. Among other things, if you modify the code and let others interact with your version over a network, the AGPL requires you to offer them its corresponding source code. Bundled components that carry their own licenses, such as XYZ.js and OPM.js under the Apache License 2.0, are governed by those licenses.',
+      'Games, covers, game names, descriptions, and other third-party materials belong to their respective owners. They are shown to identify and describe games and are not licensed to you by these terms. Code licenses do not give you the right to use the YSGS Games or YuStellarGamesStudio names or logos in a way that suggests endorsement or official status.',
+      'If you believe material on the website infringes your rights, contact us through the website repository with enough detail to identify the material and your rights, without posting personal information publicly. We will review the request and may remove or change the material.',
+    ] },
+    { title: 'Feedback and contributions', body: [
+      'Issues, pull requests, and other contributions to the website repository are made on GitHub under GitHub’s terms and are public. Unless stated otherwise, contributions to the repository are provided under the repository’s license, and we may use feedback without any obligation to you. Do not submit material you are not entitled to share.',
+    ] },
+    { title: 'Privacy', body: [
+      'The Privacy Statement explains what the website stores in your browser, which services receive your requests, and how to delete stored data. Game providers handle game data under their own privacy notices.',
+    ] },
+    { title: 'Disclaimer of warranties', body: [
+      'To the extent permitted by applicable law, the website, its catalog information, and its offline copies are provided “as is” and “as available,” without warranties of any kind, whether express or implied, including warranties of merchantability, fitness for a particular purpose, accuracy, availability, and non-infringement.',
+    ] },
+    { title: 'Limitation of liability', body: [
+      'To the extent permitted by applicable law, YuStellarGamesStudio is not liable for indirect, incidental, special, consequential, or punitive damages, or for loss of data, game progress, profits, or goodwill, arising from your use of or inability to use the website. We are also not liable for third-party games, services, or content, or for interruptions, delays, or errors caused by hosting, network, or catalog providers.',
+      'These limitations reflect that the website is provided free of charge. Nothing in these terms excludes or limits liability that cannot be excluded or limited under applicable law, such as liability for intentional misconduct or gross negligence where the law requires it, or your rights as a consumer under the mandatory laws of the place where you live.',
+    ] },
+    { title: 'Suspension and ending use', body: [
+      'You may stop using the website at any time and delete its stored data as described in the Privacy Statement. Where technically possible, we may restrict or block access by anyone who breaches these terms or threatens the security or operation of the website. Provisions that by their nature should continue, such as those on intellectual property, disclaimers, and limitation of liability, continue to apply after you stop using the website.',
+    ] },
+    { title: 'General terms', body: [
+      'If any provision of these terms is found invalid or unenforceable, the remaining provisions remain in effect. Our failure to enforce a provision is not a waiver of our right to do so later. These terms and the Privacy Statement are the entire agreement between you and YuStellarGamesStudio regarding the website.',
+      'These terms do not choose a governing law or an exclusive court. The applicable law is determined by the rules that apply to your situation, and mandatory consumer-protection laws where you live continue to apply.',
+      'The English, Traditional Chinese, and Japanese versions describe the same terms. If they differ, the English version prevails to the extent permitted by applicable law.',
+    ] },
+    { title: 'Changes and contact', body: [
+      'We may update these terms, for example when the website, its service providers, or the law changes. We will publish the updated terms on this page and change the date above. Changes apply from that date and not retroactively; continuing to use the website afterward means you accept the revised terms.',
+      'For questions, use the website repository linked below. GitHub issues are public, so do not post personal, confidential, or security-sensitive information; report security issues as described in SECURITY.md.',
+    ] },
   ],
   notFound: 'Page not found.',
   notFoundLead: 'This destination is off the star map. Head home or discover another game.',
@@ -345,14 +401,70 @@ const zhTW: Messages = {
   ],
   termsTitle: '服務條款',
   termsUpdated: '最後更新：2026 年 10 月 4 日',
-  termsLead: '本條款適用於您使用由 YuStellarGamesStudio 營運的星語遊戲網（ysgs.app），包括可安裝的 App。使用本站即表示您同意本條款；若不同意，請停止使用。',
+  termsLead: '本服務條款規範您對由 YuStellarGamesStudio 營運之星語遊戲網（ysgs.app）的使用，包括其所有頁面、離線模式，以及透過瀏覽器從本站安裝的 App。請詳細閱讀。使用本站即表示您同意本條款；若不同意，請停止使用。',
   termsSections: [
-    { title: '服務內容', body: '星語遊戲網是免費網站，供您探索瀏覽器遊戲並在嵌入框架中啟動，無須註冊帳號。遊戲資訊來自 GameCatalog。本站功能、收錄遊戲及服務本身可能隨時變更、暫停或終止，恕不另行通知。' },
-    { title: '使用規範', body: '請以合法且不損害他人的方式使用本站。請勿試圖干擾、癱瘓或未經授權存取本站、其託管服務、data.ysgs.app 或遊戲提供者；請勿規避本站的安全限制，或利用本站散布惡意程式或侵權內容。發現安全問題時，請依 SECURITY.md 私下回報，切勿加以利用。' },
-    { title: '第三方遊戲與服務', body: '除另有說明外，遊戲由各提供者製作與營運，並非 YuStellarGamesStudio 所有。遊戲內容、可用性、適齡程度、付費項目及資料處理，均適用各提供者自己的條款與隱私權聲明。收錄不代表背書或保證。外部連結通往獨立營運的服務，我們不對其內容或做法負責。' },
-    { title: '智慧財產權與原始碼', body: '本站原始碼以 GNU Affero General Public License v3.0（AGPL-3.0）授權公開，您對該程式碼的權利依該授權決定。遊戲、封面、名稱及其他第三方素材屬於各自的權利人，本條款並未授權您使用。未經許可，不得使用星語遊戲網與 YuStellarGamesStudio 的名稱與標誌暗示背書。' },
-    { title: '免責聲明與責任限制', body: '本站依「現狀」及「現有」提供，不提供任何明示或默示保證，包括可用性、正確性或特定用途適用性。在適用法律允許的範圍內，YuStellarGamesStudio 不對間接或衍生損害，或因第三方遊戲、服務或服務中斷造成的損失負責。本條款不限制依適用法律不得限制的權利。' },
-    { title: '條款變更與聯絡', body: '我們可能更新本條款，並同步修改上方日期。更新後繼續使用本站，即表示您接受修訂後的條款。如有疑問，請透過下方連結的網站倉庫聯絡；GitHub issue 為公開內容，請勿張貼個人或機密資訊。英文、繁體中文與日文版本說明相同的條款。' },
+    { title: '協議與適用範圍', body: [
+      '本條款構成您與 YuStellarGamesStudio 之間關於本站的協議。頁尾連結的隱私權聲明說明資訊的處理方式，並構成本條款的一部分。',
+      '本條款不規範在遊玩頁面開啟的遊戲、GitHub 或其他外部服務；這些服務依其各自的條款營運，您使用時適用該條款。YuStellarGamesStudio 在其他網域發布的遊戲也可能有自己的條款，並適用於該遊戲。',
+    ] },
+    { title: '年齡與行為能力', body: [
+      '本站不詢問您的年齡。若您未達所在地可訂立具拘束力協議的年齡，請僅在父母或監護人同意下使用本站，並由其代您接受本條款。個別遊戲可能有自己的分級或年齡限制，您必須遵守。',
+    ] },
+    { title: '服務內容', body: [
+      '星語遊戲網是探索瀏覽器遊戲的免費網站。您可以瀏覽與搜尋遊戲目錄、查看遊戲詳情、在嵌入的遊玩框架中啟動遊戲、在資料頁探索目錄統計、播放可選的背景音樂、使用先前保存的副本離線瀏覽，並將本站安裝為 App。',
+      '本站無須帳號，也不收取任何費用。本站本身不販售任何商品；遊戲內提供的購買、訂閱或帳號，屬於您與該遊戲提供者之間的事項。',
+    ] },
+    { title: '服務可用性與變更', body: [
+      '我們可隨時新增、變更或移除功能、頁面與收錄的遊戲，或暫停、終止本站，恕不另行通知。本站仰賴可能無法使用的託管、網路與目錄服務，我們不保證本站在任何特定時間可用、不中斷或沒有錯誤。',
+      '離線副本顯示的是瀏覽器最近一次保存的版本，可能已經過時。遊戲無法離線遊玩。',
+    ] },
+    { title: '目錄資訊', body: [
+      '遊戲名稱、說明、分類、標籤、封面與連結來自 GameCatalog 資料集。我們會盡力維持其正確性，但資訊可能不完整、過時或有誤，也不構成任何遊戲提供者的要約。內容、系統需求或價格等重要細節，請向遊戲提供者確認。',
+      '我們可自行決定更正、隱藏或移除任何收錄項目，包括應權利人或遊戲提供者的要求。',
+    ] },
+    { title: '使用規範', body: [
+      '請僅以合法且不損害本站、他人或服務提供者的方式使用本站。特別是，您不得：（1）試圖未經授權存取、干擾或癱瘓本站、其託管服務、data.ysgs.app 或遊戲提供者；（2）規避、停用或探測本站的安全控制，包括遊戲 sandbox 及拒絕被嵌入的限制，但 SECURITY.md 允許者除外；（3）以足以降低他人服務品質的數量或頻率發送自動化請求；（4）以可能被誤認為官方 ysgs.app 的方式呈現本站的複製版或修改版；（5）利用本站散布惡意程式、垃圾訊息或違法、侵權的內容；或（6）不實表示您與 YuStellarGamesStudio 或遊戲提供者的關係。',
+    ] },
+    { title: '安全研究', body: [
+      '若您發現安全漏洞，請依網站倉庫中 SECURITY.md 的說明私下回報。請勿加以利用、存取他人資料，或在問題處理前公開揭露。SECURITY.md 並未授權測試 GitHub、Cloudflare 或遊戲提供者等第三方基礎設施，本條款也未授予任何此類許可。',
+    ] },
+    { title: '第三方遊戲', body: [
+      '遊戲由各自的提供者製作與營運。除非 YuStellarGamesStudio 被標示為提供者，否則其不製作、營運或控制這些遊戲。各遊戲的內容、可用性、適齡程度、帳號、廣告、購買與資料處理，均適用其提供者的條款與隱私權說明，請在遊玩前查看。',
+      '收錄不代表對遊戲品質、安全性或合法性的背書、推薦或保證。遊玩框架的 sandbox 會限制遊戲在瀏覽器中能做的事，但不代表遊戲安全，也不代表其內容經過審查。遊戲的問題請聯絡該遊戲提供者；若您認為某收錄項目有害、違法或具誤導性，請透過網站倉庫告知我們，以便審查。',
+    ] },
+    { title: '外部連結', body: [
+      '本站連結至 GitHub 倉庫、遊戲提供者及其他外部網站。這些網站依其各自的條款與政策獨立營運，我們不對其內容、可用性或做法負責。',
+    ] },
+    { title: '智慧財產權', body: [
+      '本站原始碼以 GNU Affero General Public License v3.0（AGPL-3.0）發布於其倉庫，您複製、修改與散布該程式碼的權利依該授權決定。其中包括：若您修改程式碼並讓他人透過網路與您的版本互動，AGPL 要求您向他們提供對應的原始碼。附帶自身授權的元件，例如採用 Apache License 2.0 的 XYZ.js 與 OPM.js，依其授權規範。',
+      '遊戲、封面、遊戲名稱、說明及其他第三方素材屬於各自的權利人。本站顯示這些素材是為了識別與介紹遊戲，本條款並未授權您使用。程式碼授權不賦予您以暗示背書或官方身分的方式使用星語遊戲網或 YuStellarGamesStudio 名稱或標誌的權利。',
+      '若您認為本站上的素材侵害您的權利，請透過網站倉庫聯絡我們，並提供足以識別該素材與您權利的細節，但請勿公開張貼個人資料。我們會審查請求，並可能移除或修改該素材。',
+    ] },
+    { title: '意見回饋與貢獻', body: [
+      '對網站倉庫提出的 issue、pull request 及其他貢獻，均在 GitHub 上依 GitHub 的條款進行，且為公開內容。除另有說明外，對倉庫的貢獻依倉庫的授權提供；我們可使用您的意見回饋，且不因此對您負有任何義務。請勿提交您無權分享的內容。',
+    ] },
+    { title: '隱私', body: [
+      '隱私權聲明說明本站在您瀏覽器中儲存的資料、哪些服務會收到您的請求，以及如何刪除已儲存的資料。遊戲提供者依其自身的隱私權說明處理遊戲資料。',
+    ] },
+    { title: '不提供保證', body: [
+      '在適用法律允許的範圍內，本站、其目錄資訊與離線副本均依「現狀」及「現有」提供，不提供任何明示或默示的保證，包括適售性、特定用途適用性、正確性、可用性及不侵權的保證。',
+    ] },
+    { title: '責任限制', body: [
+      '在適用法律允許的範圍內，YuStellarGamesStudio 對因您使用或無法使用本站而產生的間接、附帶、特殊、衍生或懲罰性損害，或資料、遊戲進度、利潤或商譽的損失，不負賠償責任。我們也不對第三方遊戲、服務或內容，或因託管、網路或目錄提供者造成的中斷、延遲或錯誤負責。',
+      '上述限制反映本站為免費提供。本條款不排除或限制依適用法律不得排除或限制的責任，例如法律要求負責的故意或重大過失責任，也不影響您依居住地強制性法律享有的消費者權利。',
+    ] },
+    { title: '停止使用與限制存取', body: [
+      '您可隨時停止使用本站，並依隱私權聲明的說明刪除其儲存的資料。在技術可行的範圍內，我們可限制或封鎖違反本條款或威脅本站安全或運作者的存取。依其性質應繼續有效的條款，例如智慧財產權、不提供保證與責任限制，在您停止使用本站後仍然適用。',
+    ] },
+    { title: '一般條款', body: [
+      '若本條款任何規定被認定無效或無法執行，其餘規定仍然有效。我們未執行某項規定，不代表放棄日後執行的權利。本條款與隱私權聲明構成您與 YuStellarGamesStudio 之間關於本站的完整協議。',
+      '本條款未指定準據法或專屬管轄法院。適用的法律依適用於您情況的規則決定，您居住地的強制性消費者保護法律仍然適用。',
+      '英文、繁體中文與日文版本說明相同的條款。若版本間有差異，在適用法律允許的範圍內以英文版本為準。',
+    ] },
+    { title: '條款變更與聯絡', body: [
+      '我們可能更新本條款，例如在本站、其服務提供者或法律變更時。我們會在本頁公布更新後的條款並修改上方日期。變更自該日期起生效，不溯及既往；之後繼續使用本站，即表示您接受修訂後的條款。',
+      '如有疑問，請透過下方連結的網站倉庫聯絡。GitHub issue 為公開內容，請勿張貼個人、機密或涉及安全的資訊；安全問題請依 SECURITY.md 回報。',
+    ] },
   ],
   notFound: '找不到此頁面。',
   notFoundLead: '這個目的地不在星圖上。返回首頁，或探索另一款遊戲吧。',
@@ -520,14 +632,70 @@ const ja: Messages = {
   ],
   termsTitle: '利用規約',
   termsUpdated: '最終更新日：2026年10月4日',
-  termsLead: '本規約は、YuStellarGamesStudio が運営する YSGS Games（ysgs.app）およびインストール可能なアプリの利用に適用されます。本サイトを利用することで、本規約に同意したものとみなされます。同意しない場合は利用を中止してください。',
+  termsLead: '本利用規約は、YuStellarGamesStudio が運営する星語ゲームズ（ysgs.app）の利用に適用されます。対象には、すべてのページ、オフラインモード、ブラウザーを通じて本サイトからインストールしたアプリが含まれます。よくお読みください。本サイトを利用することで本規約に同意したものとみなされます。同意しない場合は利用を中止してください。',
   termsSections: [
-    { title: 'サービス内容', body: 'YSGS Games は、ブラウザーゲームを探し、埋め込みフレームで起動できる無料のサイトです。アカウント登録は不要です。ゲーム情報は GameCatalog から取得しています。機能、掲載ゲーム、サービス自体は予告なく変更、一時停止、終了される場合があります。' },
-    { title: '禁止事項', body: '法令を守り、他者に損害を与えない方法で利用してください。本サイト、そのホスティング、data.ysgs.app、ゲーム提供者への妨害、過負荷、不正アクセスを試みること、セキュリティ制限を回避すること、マルウェアや権利侵害コンテンツの配布に利用することは禁止します。セキュリティ上の問題は悪用せず、SECURITY.md に従って非公開で報告してください。' },
-    { title: '第三者のゲームとサービス', body: '特に明記しない限り、ゲームは各提供者が制作・運営するもので、YuStellarGamesStudio のものではありません。ゲームの内容、提供状況、対象年齢、課金、情報の取り扱いには、各提供者の規約とプライバシー通知が適用されます。掲載は推奨や保証を意味しません。外部リンク先は独立して運営されるサービスであり、その内容や運用について責任を負いません。' },
-    { title: '知的財産とソースコード', body: '本サイトのソースコードは GNU Affero General Public License v3.0（AGPL-3.0）で公開されており、そのコードに関する権利は同ライセンスに従います。ゲーム、画像、名称その他の第三者の素材は各権利者に帰属し、本規約によって利用を許諾するものではありません。許可なく YSGS Games および YuStellarGamesStudio の名称やロゴを、推奨を示唆する形で使用することはできません。' },
-    { title: '免責と責任の制限', body: '本サイトは「現状有姿」かつ「提供可能な範囲」で提供され、提供状況、正確性、特定目的への適合性を含め、いかなる保証もしません。適用法令で認められる範囲で、YuStellarGamesStudio は間接損害・派生損害、および第三者のゲーム、サービス、障害に起因する損失について責任を負いません。本規約は、適用法令上制限できない権利を制限するものではありません。' },
-    { title: '規約の変更とお問い合わせ', body: '本規約を更新する場合は、上記の日付を変更します。更新後も本サイトを利用した場合、改訂後の規約に同意したものとみなされます。ご質問は下記のサイトリポジトリからお寄せください。GitHub issue は公開されるため、個人情報や機密情報を投稿しないでください。英語、繁体字中国語、日本語の各版は同じ規約を説明しています。' },
+    { title: '合意と適用範囲', body: [
+      '本規約は、本サイトに関する利用者と YuStellarGamesStudio との間の合意です。フッターからリンクしているプライバシー声明は情報の取り扱いを説明するもので、本規約の一部を構成します。',
+      '本規約は、プレイ画面で開くゲーム、GitHub、その他の外部サービスには適用されません。これらはそれぞれの規約に基づいて運営され、利用時にはその規約が適用されます。YuStellarGamesStudio が別のドメインで公開するゲームにも独自の規約がある場合があり、そのゲームにはその規約が適用されます。',
+    ] },
+    { title: '年齢と行為能力', body: [
+      '本サイトは年齢を尋ねません。お住まいの地域で法的拘束力のある契約を結べる年齢に達していない場合は、保護者の同意を得たうえで利用し、保護者が代わりに本規約に同意するものとします。個々のゲームには独自の年齢区分や年齢制限がある場合があり、それに従う必要があります。',
+    ] },
+    { title: 'サービス内容', body: [
+      '星語ゲームズは、ブラウザーゲームを探すための無料のサイトです。ゲームカタログの閲覧と検索、ゲーム詳細の表示、埋め込みプレイヤーでのゲームの起動、データページでのカタログ統計の閲覧、任意の BGM の再生、保存済みのコピーによるオフライン閲覧、アプリとしてのインストールができます。',
+      '本サイトはアカウントを必要とせず、料金もかかりません。本サイト自体は何も販売しておらず、ゲーム内で提供される購入、定期購読、アカウントは、利用者とそのゲームの提供者との間の事項です。',
+    ] },
+    { title: '提供状況と変更', body: [
+      '当方は、機能、ページ、掲載ゲームをいつでも予告なく追加、変更、削除し、または本サイトを一時停止もしくは終了することがあります。本サイトは利用できなくなる可能性のあるホスティング、ネットワーク、カタログのサービスに依存しており、特定の時点での利用可能性、中断のないこと、誤りのないことを保証しません。',
+      'オフラインのコピーはブラウザーが最後に保存した版を表示するため、古い場合があります。ゲームはオフラインではプレイできません。',
+    ] },
+    { title: 'カタログ情報', body: [
+      'ゲームの名称、説明、ジャンル、タグ、カバー画像、リンクは GameCatalog のデータセットに由来します。正確さの維持に努めていますが、不完全、古い、または誤っている場合があり、ゲーム提供者による申し込みの誘引や提示ではありません。内容、動作環境、価格などの重要な情報は、ゲーム提供者にご確認ください。',
+      '当方は、権利者やゲーム提供者からの要請による場合を含め、独自の判断で掲載内容を修正、非表示、削除することがあります。',
+    ] },
+    { title: '禁止事項', body: [
+      '本サイトは、法令を守り、本サイト、他者、サービス提供者に損害を与えない方法でのみ利用してください。特に、次の行為を禁止します。（1）本サイト、そのホスティング、data.ysgs.app、ゲーム提供者への不正アクセス、妨害、過負荷を試みること。（2）SECURITY.md で認められる場合を除き、ゲームの sandbox や埋め込み拒否を含む本サイトのセキュリティ制御を回避、無効化、探査すること。（3）他の利用者へのサービス品質を低下させる量や頻度で自動リクエストを送ること。（4）本サイトの複製版や改変版を、公式の ysgs.app と誤認されうる形で提示すること。（5）本サイトを利用してマルウェア、スパム、違法または権利侵害のコンテンツを配布すること。（6）YuStellarGamesStudio やゲーム提供者との関係を偽ること。',
+    ] },
+    { title: 'セキュリティ研究', body: [
+      '脆弱性を見つけた場合は、サイトのリポジトリにある SECURITY.md の説明に従って非公開で報告してください。悪用、他者のデータへのアクセス、対応前の公開はしないでください。SECURITY.md は GitHub、Cloudflare、ゲーム提供者などの第三者のインフラに対するテストを許可しておらず、本規約もそのような許可を与えるものではありません。',
+    ] },
+    { title: '第三者のゲーム', body: [
+      'ゲームは各提供者が制作・運営しています。YuStellarGamesStudio が提供者として示されている場合を除き、当方はゲームを制作、運営、管理していません。各ゲームの内容、提供状況、対象年齢、アカウント、広告、購入、情報の取り扱いには、その提供者の規約とプライバシー通知が適用されます。プレイ前にご確認ください。',
+      '掲載は、ゲームの品質、安全性、適法性についての推奨、推薦、保証ではありません。プレイヤーの sandbox はブラウザー内でゲームができることを制限しますが、ゲームの安全性を保証したり、内容を審査したりするものではありません。ゲームの問題はゲーム提供者にお問い合わせください。有害、違法、誤解を招く掲載があると思われる場合は、確認のためサイトのリポジトリを通じてお知らせください。',
+    ] },
+    { title: '外部リンク', body: [
+      '本サイトは GitHub のリポジトリ、ゲーム提供者、その他の外部サイトへリンクしています。これらはそれぞれの規約と方針に基づいて独立して運営されており、その内容、提供状況、運用について当方は責任を負いません。',
+    ] },
+    { title: '知的財産', body: [
+      '本サイトのソースコードは GNU Affero General Public License v3.0（AGPL-3.0）でリポジトリに公開されており、そのコードの複製、改変、頒布の権利は同ライセンスに従います。たとえば、コードを改変し、その版をネットワーク越しに他者に利用させる場合、AGPL は対応するソースコードをその利用者に提供することを求めています。独自のライセンスを持つ同梱コンポーネント（Apache License 2.0 の XYZ.js や OPM.js など）には、それぞれのライセンスが適用されます。',
+      'ゲーム、カバー画像、ゲーム名、説明その他の第三者の素材は、各権利者に帰属します。これらはゲームを識別・紹介するために表示しているもので、本規約によって利用を許諾するものではありません。コードのライセンスは、推奨や公式であることを示唆する形で星語ゲームズや YuStellarGamesStudio の名称やロゴを使用する権利を与えるものではありません。',
+      '本サイト上の素材が権利を侵害していると思われる場合は、素材と権利を特定できる程度の詳細を添えて、サイトのリポジトリを通じてご連絡ください。その際、個人情報を公開で投稿しないでください。当方は内容を確認し、素材を削除または変更することがあります。',
+    ] },
+    { title: 'フィードバックと貢献', body: [
+      'サイトのリポジトリへの issue、pull request その他の貢献は、GitHub の規約に基づいて GitHub 上で行われ、公開されます。特に定めがない限り、リポジトリへの貢献はリポジトリのライセンスの下で提供されるものとし、当方はフィードバックを利用者に対する義務を負うことなく利用できます。共有する権利のない素材は投稿しないでください。',
+    ] },
+    { title: 'プライバシー', body: [
+      'プライバシー声明では、本サイトがブラウザーに保存するもの、通信を受け取るサービス、保存データの削除方法を説明しています。ゲームのデータは、各ゲーム提供者が自身のプライバシー通知に基づいて取り扱います。',
+    ] },
+    { title: '保証の否認', body: [
+      '適用法令で認められる範囲で、本サイト、そのカタログ情報、オフラインのコピーは「現状有姿」かつ「提供可能な範囲」で提供され、商品性、特定目的への適合性、正確性、提供状況、権利非侵害を含め、明示または黙示を問わずいかなる保証もしません。',
+    ] },
+    { title: '責任の制限', body: [
+      '適用法令で認められる範囲で、YuStellarGamesStudio は、本サイトの利用または利用不能から生じる間接損害、付随的損害、特別損害、結果的損害、懲罰的損害、およびデータ、ゲームの進行状況、利益、信用の喪失について責任を負いません。また、第三者のゲーム、サービス、コンテンツ、ならびにホスティング、ネットワーク、カタログの提供者に起因する中断、遅延、誤りについても責任を負いません。',
+      'これらの制限は、本サイトが無料で提供されていることを反映したものです。本規約は、法律上要求される故意または重大な過失による責任など、適用法令上除外または制限できない責任を除外・制限するものではなく、お住まいの地域の強行法規に基づく消費者としての権利にも影響しません。',
+    ] },
+    { title: '利用の終了とアクセスの制限', body: [
+      '利用者はいつでも本サイトの利用をやめ、プライバシー声明の説明に従って保存データを削除できます。当方は、技術的に可能な範囲で、本規約に違反した者や本サイトの安全や運営を脅かす者のアクセスを制限または遮断することがあります。知的財産、保証の否認、責任の制限など、その性質上存続すべき条項は、利用を終了した後も適用されます。',
+    ] },
+    { title: '一般条項', body: [
+      '本規約のいずれかの規定が無効または執行不能と判断された場合でも、その他の規定は引き続き有効です。当方がある規定を行使しなかったとしても、後に行使する権利を放棄したことにはなりません。本規約とプライバシー声明は、本サイトに関する利用者と YuStellarGamesStudio との間の完全な合意を構成します。',
+      '本規約は準拠法や専属的な管轄裁判所を定めていません。適用される法律は利用者の状況に適用される規則によって決まり、お住まいの地域の強行的な消費者保護法は引き続き適用されます。',
+      '英語、繁体字中国語、日本語の各版は同じ規約を説明しています。各版の間に相違がある場合は、適用法令で認められる範囲で英語版が優先します。',
+    ] },
+    { title: '規約の変更とお問い合わせ', body: [
+      '本サイト、そのサービス提供者、法令の変更などに伴い、本規約を更新することがあります。更新後の規約はこのページに掲載し、上記の日付を変更します。変更はその日付から適用され、遡って適用されることはありません。その後も本サイトを利用した場合、改訂後の規約に同意したものとみなされます。',
+      'ご質問は、下記のサイトのリポジトリからお寄せください。GitHub issue は公開されるため、個人情報、機密情報、セキュリティに関わる情報は投稿しないでください。セキュリティ上の問題は SECURITY.md に従って報告してください。',
+    ] },
   ],
   notFound: 'ページが見つかりません。',
   notFoundLead: 'この目的地は星図にありません。ホームに戻るか、別のゲームを探してみましょう。',

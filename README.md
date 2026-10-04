@@ -30,7 +30,7 @@
 - 遊戲資料於瀏覽器執行時讀取 [GameCatalog](https://github.com/YuStellarGamesStudio/GameCatalog) 的 `allgames.json`、`games/<id>.json` 與 `categories.json`，只顯示 `status` 為 `published` 的遊戲；外部連結與封面只接受 HTTPS 網址。
 - PWA：提供 `manifest.webmanifest` 與圖示，可安裝成獨立視窗的 App。Service worker 只在正式產物註冊，預先快取網站殼層（HTML、JS、CSS、圖示）；頁面導覽走網路優先，離線時回傳快取的殼層；GameCatalog 的 JSON 走網路優先並保留最後一份成功回應，離線時仍能瀏覽遊戲庫與資料頁。遊戲本體與外部封面不在快取範圍，離線時無法遊玩。新版部署後，新的 worker 會在所有分頁關閉後才接手。
 - 隱私權聲明：頁尾連至 `?view=privacy`，提供英文、繁體中文、日文即時切換版本。內容集中於 `src/i18n.ts`，逐項說明 localStorage 鍵值與預設值、service worker 快取、頁面記憶體與網址中的資料、各網路請求對象（GitHub Pages、Cloudflare、data.ysgs.app、封面主機、遊戲提供者）、Referrer 與遊戲 sandbox 權限、可安裝 App、保存期間與清除方式；儲存、整合、託管或 sandbox 變更時須同步維護三語聲明。
-- 服務條款：頁尾於隱私權聲明右側連至 `?view=terms`，提供三語即時切換版本，內容集中於 `src/i18n.ts`，涵蓋服務內容、使用規範、第三方遊戲、AGPL-3.0 原始碼授權與免責聲明；服務或授權變更時須同步維護三語條款。
+- 服務條款：頁尾於隱私權聲明右側連至 `?view=terms`，提供三語即時切換版本，內容集中於 `src/i18n.ts`，涵蓋適用範圍、年齡、服務內容與可用性、目錄資訊、使用規範、安全研究、第三方遊戲與外部連結、智慧財產權（AGPL-3.0 與 Apache-2.0 元件）、貢獻、免責與責任限制、停止使用、一般條款（未指定準據法；語言版本歧異時以英文為準）及條款變更；服務、授權或託管變更時須同步維護三語條款。
 
 尚未加入帳號、後端 API 或資料儲存功能。部署流程已定義於倉庫；是否已上線，仍須以 GitHub Actions 執行結果與實際網站為準。
 

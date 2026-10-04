@@ -587,11 +587,11 @@ function renderPlay(catalog: Catalog | null, id: string): Node[] {
   return [h('div', { class: 'player' }, frame, exit, dialog)];
 }
 
-function renderLegal(updated: string, title: string, lead: string, sections: readonly { title: string; body: string | readonly string[] }[]): Node[] {
+function renderLegal(updated: string, title: string, lead: string, sections: readonly { title: string; body: readonly string[] }[]): Node[] {
   return [
     viewHeading(updated, title, lead),
     h('article', { class: 'privacy-content' },
-      ...sections.map((section) => h('section', { class: 'panel' }, h('h2', {}, section.title), ...[section.body].flat().map((paragraph) => h('p', {}, paragraph)))),
+      ...sections.map((section) => h('section', { class: 'panel' }, h('h2', {}, section.title), ...section.body.map((paragraph) => h('p', {}, paragraph)))),
       externalLink(SOURCE_URL, 'text-link', t.footerSource),
     ),
   ];
