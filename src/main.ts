@@ -5,7 +5,7 @@ import { MusicController } from './music';
 import type { Stage, StageState } from './stage';
 
 type Theme = 'dark' | 'light';
-type Route = { view: 'home' } | { view: 'games'; genre: string | null } | { view: 'game'; id: string } | { view: 'play'; id: string } | { view: 'data' } | { view: 'missing' };
+type Route = { view: 'home' } | { view: 'games'; genre: string | null } | { view: 'game'; id: string } | { view: 'play'; id: string } | { view: 'data' } | { view: 'privacy' } | { view: 'missing' };
 
 const LOCALE_KEY = 'ysgs-locale';
 const THEME_KEY = 'ysgs-theme';
@@ -102,9 +102,9 @@ function categoryName(key: string): string {
 
 // Routes live in the query string so every view is a real, server-resolvable URL
 // (GitHub Pages serves index.html for any query on the root):
-// `/`, `?view=games`, `?view=games&genre=<category>`, `?view=games&id=<id>`, `?view=data`, `?play=<id>`.
+// `/`, `?view=games`, `?view=games&genre=<category>`, `?view=games&id=<id>`, `?view=data`, `?view=privacy`, `?play=<id>`.
 const BASE = import.meta.env.BASE_URL;
-const HREF = { home: BASE, games: `${BASE}?view=games`, data: `${BASE}?view=data` } as const;
+const HREF = { home: BASE, games: `${BASE}?view=games`, data: `${BASE}?view=data`, privacy: `${BASE}?view=privacy` } as const;
 
 function gameHref(id: string): string {
   return `${HREF.games}&id=${encodeURIComponent(id)}`;
@@ -127,6 +127,7 @@ function parseRoute(): Route {
   if (view === null) return id === null ? { view: 'home' } : { view: 'missing' };
   if (view === 'games') return id ? { view: 'game', id } : { view: 'games', genre: params.get('genre') };
   if (view === 'data' && id === null) return { view: 'data' };
+  if (view === 'privacy' && id === null) return { view: 'privacy' };
   return { view: 'missing' };
 }
 
@@ -158,8 +159,9 @@ const header = h('header', { class: 'site-header' }, h('div', { class: 'header-i
 const main = h('main', { id: 'main', class: 'site-main', tabindex: -1 });
 const footerSource = h('a', { href: SOURCE_URL, rel: 'noopener noreferrer', target: '_blank' });
 const footerData = h('a', { href: DATA_REPO_URL, rel: 'noopener noreferrer', target: '_blank' });
+const footerPrivacy = h('a', { href: HREF.privacy });
 const footerCopy = h('span');
-const footer = h('footer', { class: 'site-footer' }, h('div', { class: 'footer-inner' }, footerCopy, h('span', { class: 'footer-links' }, footerSource, footerData)));
+const footer = h('footer', { class: 'site-footer' }, h('div', { class: 'footer-inner' }, footerCopy, h('span', { class: 'footer-links' }, footerPrivacy, footerSource, footerData)));
 
 const stageCanvas = h('canvas', { class: 'stage', 'aria-hidden': 'true' });
 let stage: Stage | null = null;
@@ -214,7 +216,7 @@ function stageState(route: Route): StageState {
   const catalog = state.catalog;
   return {
     theme: state.theme,
-    view: route.view === 'play' ? 'game' : route.view,
+    view: route.view === 'play' ? 'game' : route.view === 'privacy' ? 'home' : route.view,
     motion: !reducedMotion.matches,
     // A loaded game covers the whole viewport, and a background tab shows nothing,
     // so in both cases the stage stops drawing entirely.
@@ -242,6 +244,7 @@ function pageMeta(route: Route): { title: string; description: string; href: str
     return { title: `${title} — ${brand}`, description: t.metaDescription, href: genreHref(genre), index: true };
   }
   if (route.view === 'data') return { title: `${t.dataTitle} — ${brand}`, description: t.dataLead, href: HREF.data, index: true };
+  if (route.view === 'privacy') return { title: `${t.privacyTitle} — ${brand}`, description: t.privacyLead, href: HREF.privacy, index: true };
   if (route.view === 'missing') return { title: `${t.notFound} — ${brand}`, description: t.metaDescription, href: location.href, index: false };
   return { title: t.pageTitle, description: t.metaDescription, href: HREF.home, index: true };
 }
@@ -290,6 +293,9 @@ function updateChrome(route: Route): void {
   themeButton.title = toLight ? t.themeToLight : t.themeToDark;
   footerSource.textContent = t.footerSource;
   footerData.textContent = t.footerData;
+  footerPrivacy.textContent = t.privacyTitle;
+  if (route.view === 'privacy') footerPrivacy.setAttribute('aria-current', 'page');
+  else footerPrivacy.removeAttribute('aria-current');
   footerCopy.textContent = `© ${new Date().getFullYear()} YuStellarGamesStudio`;
   stage?.update(stageState(route));
   updateMusicBlocking(route);
@@ -575,6 +581,16 @@ function renderPlay(catalog: Catalog | null, id: string): Node[] {
   return [h('div', { class: 'player' }, frame, exit, dialog)];
 }
 
+function renderPrivacy(): Node[] {
+  return [
+    viewHeading(t.privacyUpdated, t.privacyTitle, t.privacyLead),
+    h('article', { class: 'privacy-content' },
+      ...t.privacySections.map((section) => h('section', { class: 'panel' }, h('h2', {}, section.title), h('p', {}, section.body))),
+      externalLink(SOURCE_URL, 'text-link', t.footerSource),
+    ),
+  ];
+}
+
 function renderData(catalog: Catalog | null): Node[] {
   const heading = viewHeading(t.dataKicker, t.dataTitle, t.dataLead);
   if (!catalog) return [heading, statusPanel()];
@@ -760,7 +776,9 @@ function render(navigated: boolean, animate = navigated): void {
             ? renderPlay(catalog, route.id)
             : route.view === 'data'
               ? renderData(catalog)
-              : renderMissing(catalog);
+              : route.view === 'privacy'
+                ? renderPrivacy()
+                : renderMissing(catalog);
   main.replaceChildren(h('div', { class: `view view-${route.view}` }, ...nodes));
   main.dataset.view = route.view;
   countUp(main, animate);

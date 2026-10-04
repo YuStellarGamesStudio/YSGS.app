@@ -53,7 +53,7 @@ async function usedGenres(games) {
 
 const escapeXml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const pages = ['', '?view=games', '?view=data'];
+const pages = ['', '?view=games', '?view=data', '?view=privacy'];
 try {
   const games = await publishedGames();
   const genres = await usedGenres(games);

@@ -1100,6 +1100,23 @@ input {
   min-width: 0;
 }
 
+.privacy-content {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 52rem;
+  margin-top: 2rem;
+}
+
+.privacy-content h2 {
+  font-size: 1.25rem;
+}
+
+.privacy-content p {
+  margin: 0;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
 /* HUD corner brackets */
 .panel::before,
 .panel::after {
@@ -1444,6 +1461,7 @@ input {
 
 .footer-links {
   display: flex;
+  flex-wrap: wrap;
   gap: 1.2rem;
 }
 
