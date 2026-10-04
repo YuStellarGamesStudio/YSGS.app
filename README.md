@@ -29,7 +29,7 @@
 - 樂曲檔案：[`public/music/stellar-drift.json`](public/music/stellar-drift.json) 獨立保存三語曲名、`bpm`、`durationBeats` 與 `tracks`。每個 track 包含官方 OPM `voice`（四個 FM operators／ADSR）及明確的 `notes: [{ note, beat, length }]`；`note` 是 MIDI 音高，`beat` 與 `length` 都以拍為單位。修改編曲只需編輯 JSON；所有音符須在循環長度內，編曲含 release 尾音同時最多八音，避免 OPM 搶音。
 - 遊戲資料於瀏覽器執行時讀取 [GameCatalog](https://github.com/YuStellarGamesStudio/GameCatalog) 的 `allgames.json`、`games/<id>.json` 與 `categories.json`，只顯示 `status` 為 `published` 的遊戲；外部連結與封面只接受 HTTPS 網址。
 - PWA：提供 `manifest.webmanifest` 與圖示，可安裝成獨立視窗的 App。Service worker 只在正式產物註冊，預先快取網站殼層（HTML、JS、CSS、圖示）；頁面導覽走網路優先，離線時回傳快取的殼層；GameCatalog 的 JSON 走網路優先並保留最後一份成功回應，離線時仍能瀏覽遊戲庫與資料頁。遊戲本體與外部封面不在快取範圍，離線時無法遊玩。新版部署後，新的 worker 會在所有分頁關閉後才接手。
-- 隱私權聲明：頁尾連至 `?view=privacy`，提供英文、繁體中文、日文即時切換版本。內容集中於 `src/i18n.ts`，說明本機偏好、離線快取、網路提供者與外部遊戲的資料處理，以及清除方式；相關實作變更時須同步維護三語聲明。
+- 隱私權聲明：頁尾連至 `?view=privacy`，提供英文、繁體中文、日文即時切換版本。內容集中於 `src/i18n.ts`，逐項說明 localStorage 鍵值與預設值、service worker 快取、頁面記憶體與網址中的資料、各網路請求對象（GitHub Pages、Cloudflare、data.ysgs.app、封面主機、遊戲提供者）、Referrer 與遊戲 sandbox 權限、可安裝 App、保存期間與清除方式；儲存、整合、託管或 sandbox 變更時須同步維護三語聲明。
 - 服務條款：頁尾於隱私權聲明右側連至 `?view=terms`，提供三語即時切換版本，內容集中於 `src/i18n.ts`，涵蓋服務內容、使用規範、第三方遊戲、AGPL-3.0 原始碼授權與免責聲明；服務或授權變更時須同步維護三語條款。
 
 尚未加入帳號、後端 API 或資料儲存功能。部署流程已定義於倉庫；是否已上線，仍須以 GitHub Actions 執行結果與實際網站為準。

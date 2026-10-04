@@ -98,14 +98,73 @@ const en = {
   footerData: 'Data: GameCatalog',
   privacyTitle: 'Privacy Statement',
   privacyUpdated: 'Last updated: October 4, 2026',
-  privacyLead: 'This statement explains how YSGS Games (ysgs.app), operated by YuStellarGamesStudio, handles information when you browse this website. Embedded games and external websites may handle information separately.',
+  privacyLead: 'This statement explains in detail what information YSGS Games (ysgs.app), operated by YuStellarGamesStudio, handles when you use the website or its installable app, where that information goes, how long it is kept, and how you can control it. Embedded games and external websites handle information under their own policies.',
   privacySections: [
-    { title: 'Information handled by this website', body: 'The current website has no account registration or personal-information submission form. Its own code does not set cookies or include analytics or advertising trackers. Game searches and filters are processed in your browser and are not submitted to a search service. We do not sell personal information or use these preferences for advertising.' },
-    { title: 'Preferences and offline storage', body: 'Your browser stores language (ysgs-locale), theme (ysgs-theme), music on/off (ysgs-music-enabled), and volume (ysgs-music-volume) in localStorage. These settings are read locally, not uploaded by the website. In production, a service worker also caches the website shell and successful GameCatalog responses for offline browsing. Settings and cached data have no fixed expiry; they remain until cleared by you or your browser, or replaced or removed by website updates. Background music is synthesized locally from website assets and does not request microphone access.' },
-    { title: 'Network requests and service providers', body: 'Loading the website sends requests to its hosting and network providers. Loading the catalog sends requests to data.ysgs.app by default; game covers may come from other HTTPS hosts. These providers receive information needed to deliver content, such as your IP address, request time, requested URL, and browser request headers, which may include browser details and a referrer depending on browser policy. Providers may keep operational or security logs under their own policies. This repository does not establish their log retention periods, storage locations, or international-transfer arrangements; we cannot promise that they keep no logs.' },
-    { title: 'Embedded games and external links', body: 'Launching a game loads its provider’s website in an embedded frame. Games may make their own network requests, use cookies or browser storage, and process gameplay or other information under their own privacy notices. The site’s sandbox restricts certain browser capabilities but does not prevent all data collection by games. External links take you to independently operated services, including GitHub. Review the relevant provider’s privacy notice before playing or supplying information; this statement does not replace it.' },
-    { title: 'Your choices and deletion', body: 'You can change language, theme, and music settings on the website. Clear this site’s data in your browser settings to remove saved preferences and offline caches; this may also remove offline availability. You can restrict storage or cookies in your browser, although some features or games may stop working. Clearing ysgs.app data does not necessarily clear data stored by game providers on other origins or delete server logs. For provider-held data, contact that provider using its privacy channels.' },
-    { title: 'Questions and changes', body: 'For general questions about this statement, use the website repository linked below to reach YuStellarGamesStudio. GitHub issues are public: do not post personal data, credentials, or other confidential information. For security reports, follow SECURITY.md in that repository. We will update this statement and its date when relevant practices change. English, Traditional Chinese, and Japanese versions describe the same practices.' },
+    { title: 'Summary', body: [
+      'YSGS Games has no accounts, sign-up, contact forms, comments, or uploads, and does not ask for your name, email address, or other contact details. The website’s own code sets no cookies and includes no analytics, advertising, session-recording, or social-media tracking scripts.',
+      'The only information the website itself saves is four display and music preferences, plus offline copies of public website and catalog files, all kept in your browser. As with any website, loading pages, catalog data, cover images, and games sends network requests to the services that deliver them, and those services can see technical information such as your IP address. Games run in an embedded frame under their providers’ own policies.',
+      'We do not sell or rent personal information, share it for cross-context behavioral advertising, build profiles about you, or make automated decisions that have legal or similarly significant effects on you.',
+    ] },
+    { title: 'Scope and who we are', body: [
+      'This statement covers the website at https://ysgs.app, all of its pages, and the app installed from it through your browser. YuStellarGamesStudio operates the website and is responsible for the practices described here.',
+      'It does not cover game websites opened in the player, the GitHub repositories linked from the website (including the source code and GameCatalog repositories), or other external services. This also applies when a game is published by YuStellarGamesStudio on another domain: that game’s own data handling is outside this statement.',
+      'In this statement, “personal information” means information relating to an identified or identifiable person. Depending on the law that applies to you, technical data such as an IP address can be personal information.',
+    ] },
+    { title: 'Information we do not collect', body: [
+      'The website does not request or receive your name, email address, phone number, postal address, date of birth, age, payment details, contacts, photos, or files. It does not use the browser’s location, camera, microphone, notification, or contacts features, and it does not run code designed to fingerprint your device or follow you across other websites.',
+      'Text you type into the game search box or the Genre dictionary filter on the Data page, and the matching results, are processed only in the open page. They are not added to the page address, not stored, and not sent to any server, and they are discarded when you leave or reload the page.',
+    ] },
+    { title: 'Preferences stored on your device', body: [
+      'When you change a setting, the website saves it in your browser’s localStorage for ysgs.app: ysgs-locale stores the language (en, zh-TW, or ja); ysgs-theme stores the theme (dark or light); ysgs-music-enabled stores whether background music is on (true or false); and ysgs-music-volume stores the music volume as a number from 0 to 1 in 5% steps.',
+      'These values are read only by the website’s code in your browser to restore your choices and are not included in network requests. Until you choose otherwise, the language is English (the website’s code does not read your browser’s language setting), the theme follows your device’s light or dark preference without saving it, music is on but waits for your first interaction before playing, and the volume is 5%.',
+      'The website’s own code does not use cookies, sessionStorage, or IndexedDB. If your browser blocks storage, for example in some private-browsing modes, your settings apply only to the current visit.',
+    ] },
+    { title: 'Offline caches', body: [
+      'In the published website, a service worker keeps copies of files so the website can open and show the catalog without a connection. The ysgs-shell-<version> cache contains the current version’s HTML, JavaScript, CSS, icons, and other website files; caches from older versions are deleted when a new version takes over. The ysgs-catalog cache keeps the most recent successful response for each GameCatalog file requested from data.ysgs.app and is refreshed from the network whenever a connection is available.',
+      'These caches contain public website and catalog content, not information you enter, although their presence can show that ysgs.app was opened in that browser. The service worker does not store game pages or cover images; your browser may still keep them in its ordinary HTTP cache according to its own rules.',
+    ] },
+    { title: 'Information processed during a visit', body: [
+      'While a page is open, your browser holds the loaded catalog, your search text and filters, and the Data page’s network log, which records the address, HTTP status, duration, and size of each catalog request made by the page. This information stays in page memory, is shown only to you, and is cleared when you close or reload the page. If something fails, technical error messages may be written to your browser’s developer console; they are not sent to us.',
+      'Some choices become part of the page address so they can be linked: the selected genre (?view=games&genre=…), the game being viewed (?view=games&id=…), and the game being played (?play=…). These addresses are saved in your browser history, are sent to the hosting providers when the page is loaded or reloaded, and are included in any link you share.',
+    ] },
+    { title: 'Network requests and service providers', body: [
+      'Using the website makes your browser send requests to: (1) ysgs.app, for the website, its icons, the background-music score, and the synthesizer files; (2) data.ysgs.app, for the game catalog (allgames.json, categories.json, and one record per game); (3) the HTTPS hosts named in the catalog, for cover images; and (4) the game provider’s website, when you open a game. Background music is generated in your browser from files on ysgs.app, and no third-party music or font service is contacted.',
+      'As of October 4, 2026, ysgs.app and data.ysgs.app are published with GitHub Pages and delivered through Cloudflare, so requests to them pass through GitHub’s and Cloudflare’s networks. Any request to a server reveals your IP address and the time of the request, and normally includes the requested address (including its query), your browser’s User-Agent, preferred languages, and other standard headers. The website’s code adds no cookies, identifiers, or tracking parameters to these requests.',
+      'These providers may process this information to deliver and cache content, protect against attacks and abuse, and produce operational statistics under their own privacy policies, including in countries other than yours. YuStellarGamesStudio does not control their retention periods or storage locations and cannot promise that they keep no logs. If a provider makes traffic or security information available to the operator, we use it only to operate, troubleshoot, and secure the website.',
+      'Referrer information is limited: cover images are requested without a referrer, and links that open in a new tab are marked noreferrer. Loading a game frame follows your browser’s default referrer policy, which in current major browsers usually tells the game provider only the origin https://ysgs.app/, not the full page address.',
+    ] },
+    { title: 'Cookies and similar technologies', body: [
+      'The website’s own code creates no cookies. In our check on October 4, 2026, responses from ysgs.app and data.ysgs.app did not set cookies. Infrastructure providers such as Cloudflare may set strictly necessary security cookies if their protection features are triggered; those cookies are controlled by the provider. Games in the player may use cookies and other storage on their own domains, subject to your browser’s settings.',
+    ] },
+    { title: 'Embedded games', body: [
+      'When you open a game, its provider’s web page is loaded into a frame on the player page from the launch address listed in GameCatalog, using a language-specific address when one exists for your language. From that moment, the game provider receives requests from your browser and can see your IP address and other request information, and the game can run its own code, contact its own servers, and use its own analytics, advertising, accounts, or purchases.',
+      'The frame is sandboxed. Games from other domains may run scripts, use cookies and storage on their own domain, and lock the mouse pointer, and the website also allows fullscreen, autoplay, gamepad input, and writing to the clipboard. Games cannot navigate the main page, open pop-ups, submit forms, or start downloads, and the website does not grant them camera, microphone, or location access. Games served from ysgs.app itself run without access to the website’s storage.',
+      'The website does not read the game’s content or receive data from the frame, such as scores, progress, or input. Information a game collects is handled by its provider, so review that provider’s privacy notice before playing or entering information. Clearing ysgs.app data does not remove data that games store on their own domains.',
+    ] },
+    { title: 'External links', body: [
+      'Links to the source code, GameCatalog, and other external websites open in a new tab and lead to independently operated services; for example, GitHub’s privacy statement applies on GitHub. Links shown in game details come from GameCatalog, and the website turns only HTTPS addresses into links, images, or game launches.',
+    ] },
+    { title: 'Installable app', body: [
+      'If you install YSGS Games through your browser, the app uses the website’s manifest and shares the same storage, caches, and settings as ysgs.app in that browser. Installation grants no additional permissions, and the app does not use push notifications, background sync, or location. Depending on your browser, uninstalling the app may not remove the website’s stored data; clear it as described below.',
+    ] },
+    { title: 'Purposes, disclosure, and retention', body: [
+      'The information described here is used only to show the website in your language and theme, play music at your chosen volume, provide offline access, deliver content, and keep the service secure. We do not disclose personal information to others, apart from the requests your browser makes to the providers described above or where disclosure is required by law.',
+      'Preferences and offline caches remain in your browser until you or your browser clear them; website updates remove older website caches automatically, and each catalog file’s copy is replaced by the next successful response. Information held in page memory is discarded when the page closes. Provider logs are kept according to each provider’s policy.',
+    ] },
+    { title: 'Security', body: [
+      'The website is served only over HTTPS, with HTTP Strict Transport Security covering ysgs.app and its subdomains, and it refuses to be embedded by other websites. Catalog content is treated as untrusted input: it is displayed as plain text, and only HTTPS addresses are used. Games run in the sandbox described above. No method of transmission or storage is completely secure, and these measures cannot protect against compromised devices, browser extensions, or third-party providers.',
+    ] },
+    { title: 'Children', body: [
+      'The website does not ask for age and does not knowingly collect personal information from anyone, including children. Some listed games may not suit every age and may have their own age requirements; parents and guardians should review a game and its provider’s policies before letting a child play.',
+    ] },
+    { title: 'Your choices and rights', body: [
+      'You can change language, theme, and music settings at any time from the header. To remove everything the website has stored, delete ysgs.app site data in your browser settings; in most browsers this removes saved preferences, offline caches, and the service worker, after which the website uses default settings and needs a connection to load. You can also block site storage, though settings will then not be remembered.',
+      'Depending on where you live, you may have rights to access, correct, delete, or object to the processing of your personal information, and to complain to a data-protection authority. Because the website keeps no server-side records linked to you, we generally cannot locate information about a particular visitor; requests about hosting or network logs, or data held by game providers, should be sent to those providers. You can still contact us with questions about this statement.',
+    ] },
+    { title: 'Questions and changes', body: [
+      'For general questions about this statement, use the website repository linked below to reach YuStellarGamesStudio. GitHub issues are public: do not post personal data, credentials, or other confidential information. For security reports, follow SECURITY.md in that repository.',
+      'We will update this statement and its date when relevant practices change, before or when the change takes effect. English, Traditional Chinese, and Japanese versions describe the same practices.',
+    ] },
   ],
   termsTitle: 'Terms of Service',
   termsUpdated: 'Last updated: October 4, 2026',
@@ -216,14 +275,73 @@ const zhTW: Messages = {
   footerData: '資料：GameCatalog',
   privacyTitle: '隱私權聲明',
   privacyUpdated: '最後更新：2026 年 10 月 4 日',
-  privacyLead: '本聲明說明由 YuStellarGamesStudio 營運的星語遊戲網（ysgs.app）在您瀏覽本站時如何處理資訊。嵌入的遊戲及外部網站可能另行處理資訊。',
+  privacyLead: '本聲明詳細說明由 YuStellarGamesStudio 營運的星語遊戲網（ysgs.app）在您使用網站或其可安裝 App 時會處理哪些資訊、資訊流向何處、保存多久，以及您如何控制。嵌入的遊戲與外部網站依其各自的政策處理資訊。',
   privacySections: [
-    { title: '本站處理的資訊', body: '目前本站沒有帳號註冊或個人資料提交表單。本站自身程式碼不設定 Cookie，也未加入分析或廣告追蹤工具。遊戲搜尋與篩選在您的瀏覽器內處理，不會提交至搜尋服務。我們不販售個人資料，也不將這些偏好用於廣告。' },
-    { title: '偏好設定與離線儲存', body: '瀏覽器使用 localStorage 儲存語言（ysgs-locale）、主題（ysgs-theme）、音樂開關（ysgs-music-enabled）與音量（ysgs-music-volume）。這些設定僅在本機讀取，不會由本站上傳。正式版本另透過 service worker 快取網站殼層及成功取得的 GameCatalog 回應，供離線瀏覽。設定與快取沒有固定到期時間，會保留至您或瀏覽器清除，或由網站更新取代或移除。背景音樂由網站資源在本機合成，不要求麥克風權限。' },
-    { title: '網路請求與服務提供者', body: '載入本站時會向網站託管及網路服務提供者發送請求。遊戲目錄預設從 data.ysgs.app 載入；遊戲封面可能來自其他 HTTPS 主機。提供者會接收傳遞內容所需的資訊，例如 IP 位址、請求時間、請求網址與瀏覽器請求標頭；依瀏覽器政策，標頭可能包含瀏覽器資訊與來源頁面。提供者可能依自身政策保留營運或安全紀錄。本倉庫無法確認其紀錄保存期限、儲存地點或跨境傳輸安排，因此不保證這些服務完全不留紀錄。' },
-    { title: '嵌入遊戲與外部連結', body: '啟動遊戲會在嵌入框架內載入遊戲提供者的網站。遊戲可能自行發送網路請求、使用 Cookie 或瀏覽器儲存空間，並依自身隱私權說明處理遊玩或其他資訊。本站的 sandbox 限制部分瀏覽器能力，但無法阻止遊戲所有資料蒐集行為。外部連結會前往獨立營運的服務，包括 GitHub。遊玩或提供資訊前，請查看相關提供者的隱私權說明；本聲明不取代該說明。' },
-    { title: '您的選擇與刪除方式', body: '您可在本站變更語言、主題與音樂設定。透過瀏覽器設定清除本站資料，可移除偏好與離線快取，但也可能失去離線使用功能。您可限制瀏覽器儲存或 Cookie，但部分功能或遊戲可能無法正常運作。清除 ysgs.app 資料不一定會清除遊戲提供者在其他來源儲存的資料，也不會刪除伺服器紀錄。針對提供者持有的資料，請透過其隱私權管道聯絡該提供者。' },
-    { title: '問題與聲明更新', body: '關於本聲明的一般問題，可透過下方網站原始碼倉庫聯絡 YuStellarGamesStudio。GitHub issue 為公開內容，請勿張貼個人資料、憑證或其他機密資訊。安全問題請依該倉庫的 SECURITY.md 回報。相關處理方式變更時，我們會更新本聲明與日期。英文、繁體中文與日文版本說明相同的處理方式。' },
+    { title: '摘要', body: [
+      '星語遊戲網沒有帳號、註冊、聯絡表單、留言或上傳功能，也不會要求您提供姓名、電子郵件或其他聯絡資料。本站自身程式碼不設定 Cookie，也未加入任何分析、廣告、操作錄製或社群媒體追蹤程式。',
+      '本站自身保存的資訊只有四項顯示與音樂偏好，以及公開網站與遊戲目錄檔案的離線副本，全部存放在您的瀏覽器中。如同所有網站，載入頁面、目錄資料、封面圖片與遊戲時，瀏覽器會向傳遞這些內容的服務發送網路請求，這些服務可看到您的 IP 位址等技術資訊。遊戲在嵌入框架中執行，並依其提供者自身的政策營運。',
+      '我們不販售或出租個人資料，不為跨情境行為廣告分享個人資料，不建立您的個人檔案，也不進行對您產生法律效果或類似重大影響的自動化決策。',
+    ] },
+    { title: '適用範圍與營運者', body: [
+      '本聲明適用於 https://ysgs.app 網站、其所有頁面，以及透過瀏覽器從本站安裝的 App。YuStellarGamesStudio 營運本站，並對本聲明所述的處理方式負責。',
+      '本聲明不適用於在遊玩頁面開啟的遊戲網站、本站連結的 GitHub 倉庫（包括原始碼與 GameCatalog 倉庫）或其他外部服務。即使遊戲由 YuStellarGamesStudio 在其他網域發布，該遊戲本身的資料處理也不在本聲明範圍內。',
+      '本聲明所稱「個人資料」，指與已識別或可識別之個人相關的資訊。依您適用的法律，IP 位址等技術資料也可能屬於個人資料。',
+    ] },
+    { title: '我們不蒐集的資訊', body: [
+      '本站不會要求或接收您的姓名、電子郵件、電話、地址、生日、年齡、付款資訊、聯絡人、照片或檔案；不使用瀏覽器的位置、相機、麥克風、通知或聯絡人功能；也不執行用於辨識裝置指紋或在其他網站追蹤您的程式。',
+      '您在遊戲搜尋框或資料頁「分類字典」篩選欄輸入的文字及符合的結果，只在目前開啟的頁面中處理：不會加入網址、不會儲存、不會傳送到任何伺服器，並在離開或重新整理頁面時捨棄。',
+    ] },
+    { title: '儲存在您裝置上的偏好設定', body: [
+      '當您變更設定時，本站會將其儲存在瀏覽器中屬於 ysgs.app 的 localStorage：ysgs-locale 儲存語言（en、zh-TW 或 ja）；ysgs-theme 儲存主題（dark 或 light）；ysgs-music-enabled 儲存背景音樂是否開啟（true 或 false）；ysgs-music-volume 以 0 至 1、每級 5% 的數值儲存音量。',
+      '這些值只由本站程式碼在您的瀏覽器中讀取，用來還原您的選擇，不會附加在網路請求中。在您變更之前，語言預設為英文（本站程式碼不讀取瀏覽器的語言設定）；主題依裝置的淺色或深色偏好顯示，但不會儲存；音樂預設開啟，但會等到您第一次操作頁面後才播放；音量為 5%。',
+      '本站自身程式碼不使用 Cookie、sessionStorage 或 IndexedDB。若瀏覽器封鎖儲存空間（例如部分無痕瀏覽模式），您的設定只在本次造訪有效。',
+    ] },
+    { title: '離線快取', body: [
+      '正式發布的網站會透過 service worker 保留檔案副本，讓網站在沒有網路時也能開啟並顯示遊戲目錄。ysgs-shell-<版本> 快取包含目前版本的 HTML、JavaScript、CSS、圖示及其他網站檔案；新版本接手後，舊版本的快取會被刪除。ysgs-catalog 快取保留從 data.ysgs.app 取得的每個 GameCatalog 檔案最近一次成功的回應，並在有網路時從網路更新。',
+      '這些快取只包含公開的網站與目錄內容，不含您輸入的資訊，但它們的存在可顯示該瀏覽器曾開啟 ysgs.app。Service worker 不會保存遊戲頁面或封面圖片；瀏覽器仍可能依自身規則將它們存放在一般的 HTTP 快取中。',
+    ] },
+    { title: '造訪期間處理的資訊', body: [
+      '頁面開啟期間，瀏覽器會保有已載入的遊戲目錄、您的搜尋文字與篩選條件，以及資料頁的「網路紀錄」；網路紀錄記錄頁面每次目錄請求的網址、HTTP 狀態、耗時與資料大小。這些資訊只存在於頁面記憶體中，僅向您顯示，並在關閉或重新整理頁面時清除。發生錯誤時，技術錯誤訊息可能寫入瀏覽器的開發者主控台，但不會傳送給我們。',
+      '部分選擇會成為網址的一部分以便分享連結：所選分類（?view=games&genre=…）、正在查看的遊戲（?view=games&id=…）及正在遊玩的遊戲（?play=…）。這些網址會保存在瀏覽器歷史紀錄中，載入或重新整理頁面時會傳送給網站託管服務，也會包含在您分享的連結中。',
+    ] },
+    { title: '網路請求與服務提供者', body: [
+      '使用本站時，瀏覽器會向以下對象發送請求：（1）ysgs.app，取得網站、圖示、背景音樂樂譜與合成器檔案；（2）data.ysgs.app，取得遊戲目錄（allgames.json、categories.json 及每款遊戲各一份紀錄）；（3）目錄所列的 HTTPS 主機，取得封面圖片；（4）開啟遊戲時的遊戲提供者網站。背景音樂由瀏覽器使用 ysgs.app 上的檔案即時合成，不會連線至第三方音樂或字型服務。',
+      '截至 2026 年 10 月 4 日，ysgs.app 與 data.ysgs.app 以 GitHub Pages 發布並透過 Cloudflare 傳遞，因此相關請求會經過 GitHub 與 Cloudflare 的網路。任何對伺服器的請求都會揭露您的 IP 位址與請求時間，通常也包含所請求的網址（含查詢字串）、瀏覽器的 User-Agent、偏好語言及其他標準標頭。本站程式碼不會在這些請求中加入 Cookie、識別碼或追蹤參數。',
+      '這些提供者可能依其隱私權政策處理上述資訊，用於傳遞與快取內容、防範攻擊與濫用，以及產生營運統計，處理地點也可能位於您所在國家或地區以外。YuStellarGamesStudio 無法控制其保存期限或儲存地點，也無法保證其不保留紀錄。若提供者向營運者提供流量或安全資訊，我們僅將其用於營運、排除問題與保護網站安全。',
+      '來源頁面（Referrer）資訊受到限制：封面圖片請求不附帶來源頁面，在新分頁開啟的連結標示為 noreferrer。載入遊戲框架時依瀏覽器的預設來源頁面政策，在目前主要瀏覽器中通常只會讓遊戲提供者得知來源 https://ysgs.app/，而非完整網址。',
+    ] },
+    { title: 'Cookie 與類似技術', body: [
+      '本站自身程式碼不建立 Cookie。我們於 2026 年 10 月 4 日檢查時，ysgs.app 與 data.ysgs.app 的回應未設定 Cookie。Cloudflare 等基礎設施提供者在其防護功能觸發時，可能設定安全所必需的 Cookie，這些 Cookie 由提供者控制。遊玩頁面中的遊戲可能在其自身網域使用 Cookie 與其他儲存空間，並受您的瀏覽器設定限制。',
+    ] },
+    { title: '嵌入遊戲', body: [
+      '開啟遊戲時，本站會依 GameCatalog 所列的啟動網址，將遊戲提供者的網頁載入遊玩頁面的框架中；若有對應您語言的網址，則使用該網址。自此時起，遊戲提供者會收到來自您瀏覽器的請求，並可看到您的 IP 位址等請求資訊；遊戲也可執行自己的程式、連線至自己的伺服器，並使用自己的分析、廣告、帳號或購買功能。',
+      '框架受到 sandbox 限制。來自其他網域的遊戲可以執行指令碼、在其自身網域使用 Cookie 與儲存空間、鎖定滑鼠指標，本站也允許全螢幕、自動播放、遊戲控制器輸入及寫入剪貼簿。遊戲無法導覽主頁面、開啟彈出視窗、提交表單或啟動下載，本站也不授予其相機、麥克風或位置存取權限。由 ysgs.app 本身提供的遊戲則無法存取本站的儲存空間。',
+      '本站不讀取遊戲內容，也不接收來自框架的資料，例如分數、進度或輸入內容。遊戲蒐集的資訊由其提供者處理，請在遊玩或提供資訊前查看該提供者的隱私權說明。清除 ysgs.app 的資料不會移除遊戲在其自身網域儲存的資料。',
+    ] },
+    { title: '外部連結', body: [
+      '原始碼、GameCatalog 及其他外部網站的連結會在新分頁開啟，並前往獨立營運的服務；例如在 GitHub 上適用 GitHub 的隱私權聲明。遊戲詳情中的連結來自 GameCatalog，本站只會將 HTTPS 網址用於連結、圖片或遊戲啟動。',
+    ] },
+    { title: '可安裝的 App', body: [
+      '若您透過瀏覽器安裝星語遊戲網，App 會使用本站的 manifest，並與該瀏覽器中的 ysgs.app 共用儲存空間、快取與設定。安裝不會授予額外權限，App 也不使用推播通知、背景同步或位置資訊。依瀏覽器而定，解除安裝 App 不一定會移除本站儲存的資料，請依下方方式清除。',
+    ] },
+    { title: '使用目的、揭露與保存期間', body: [
+      '本聲明所述的資訊僅用於以您選擇的語言與主題顯示網站、以您選擇的音量播放音樂、提供離線使用、傳遞內容及維護服務安全。除瀏覽器向上述提供者發送的請求，或法律要求揭露的情形外，我們不會向他人揭露個人資料。',
+      '偏好設定與離線快取會保留在瀏覽器中，直到您或瀏覽器將其清除；網站更新時會自動刪除舊版網站快取，每個目錄檔案的副本則由下一次成功的回應取代。頁面記憶體中的資訊在頁面關閉時捨棄。提供者的紀錄依各提供者的政策保存。',
+    ] },
+    { title: '安全', body: [
+      '本站僅透過 HTTPS 提供，並以涵蓋 ysgs.app 及其子網域的 HTTP Strict Transport Security 保護，且拒絕被其他網站嵌入。目錄內容一律視為不受信任的輸入：以純文字顯示，且只使用 HTTPS 網址。遊戲在上述 sandbox 中執行。任何傳輸或儲存方式都無法保證絕對安全，這些措施也無法防範遭入侵的裝置、瀏覽器擴充功能或第三方提供者造成的風險。',
+    ] },
+    { title: '兒童', body: [
+      '本站不詢問年齡，也不會在知情的情況下蒐集任何人（包括兒童）的個人資料。部分收錄的遊戲可能不適合所有年齡，並可能有其自身的年齡限制；家長與監護人應在讓兒童遊玩前，先查看遊戲及其提供者的政策。',
+    ] },
+    { title: '您的選擇與權利', body: [
+      '您可隨時在頁首變更語言、主題與音樂設定。若要移除本站儲存的所有資料，請在瀏覽器設定中刪除 ysgs.app 的網站資料；在多數瀏覽器中，這會移除已儲存的偏好、離線快取與 service worker，之後本站將使用預設設定，且需要網路才能載入。您也可以封鎖網站儲存空間，但設定將無法被記住。',
+      '依您所在地區，您可能有權存取、更正、刪除您的個人資料或反對其處理，並向個人資料保護主管機關申訴。由於本站不保留與您相關的伺服器端紀錄，我們通常無法查找特定訪客的資訊；關於託管或網路紀錄，或遊戲提供者持有的資料，請向該提供者提出請求。您仍可就本聲明向我們提出問題。',
+    ] },
+    { title: '問題與聲明更新', body: [
+      '關於本聲明的一般問題，可透過下方網站原始碼倉庫聯絡 YuStellarGamesStudio。GitHub issue 為公開內容，請勿張貼個人資料、憑證或其他機密資訊。安全問題請依該倉庫的 SECURITY.md 回報。',
+      '相關處理方式變更時，我們會在變更生效前或生效時更新本聲明與日期。英文、繁體中文與日文版本說明相同的處理方式。',
+    ] },
   ],
   termsTitle: '服務條款',
   termsUpdated: '最後更新：2026 年 10 月 4 日',
@@ -332,14 +450,73 @@ const ja: Messages = {
   footerData: 'データ：GameCatalog',
   privacyTitle: 'プライバシー声明',
   privacyUpdated: '最終更新日：2026年10月4日',
-  privacyLead: '本声明は、YuStellarGamesStudio が運営する YSGS Games（ysgs.app）の閲覧時に、情報がどのように取り扱われるかを説明します。埋め込みゲームや外部サイトでは、別途情報が取り扱われる場合があります。',
+  privacyLead: '本声明は、YuStellarGamesStudio が運営する星語ゲームズ（ysgs.app）のウェブサイトおよびインストール可能なアプリをご利用の際に、どのような情報が取り扱われ、どこへ送られ、どのくらいの期間保存され、どのように管理できるかを詳しく説明します。埋め込みゲームや外部サイトは、それぞれの方針に基づいて情報を取り扱います。',
   privacySections: [
-    { title: '本サイトが取り扱う情報', body: '現在、本サイトにはアカウント登録や個人情報を送信するフォームはありません。本サイト自身のコードは Cookie を設定せず、アクセス解析や広告トラッカーも組み込んでいません。ゲームの検索と絞り込みはブラウザー内で処理され、検索サービスには送信されません。個人情報の販売や、これらの設定の広告利用は行いません。' },
-    { title: '設定とオフライン保存', body: 'ブラウザーの localStorage に言語（ysgs-locale）、テーマ（ysgs-theme）、音楽のオン・オフ（ysgs-music-enabled）、音量（ysgs-music-volume）を保存します。これらは端末内で読み取られ、本サイトからアップロードされません。本番版では service worker がサイトの基本ファイルと正常に取得した GameCatalog の応答をキャッシュし、オフライン閲覧に使用します。設定とキャッシュに固定の有効期限はなく、利用者やブラウザーによる削除、またはサイト更新による置き換え・削除まで残ります。背景音楽はサイトの素材から端末内で合成され、マイクへのアクセスを要求しません。' },
-    { title: 'ネットワーク通信とサービス提供者', body: '本サイトの読み込み時には、ホスティングおよびネットワークの提供者へリクエストが送られます。ゲームカタログは通常 data.ysgs.app から読み込まれ、ゲームの画像は別の HTTPS ホストから取得される場合があります。提供者はコンテンツ配信に必要な IP アドレス、リクエスト日時、URL、ブラウザーのリクエストヘッダーなどを受け取ります。ブラウザーのポリシーにより、ヘッダーにはブラウザー情報や参照元が含まれる場合があります。提供者は独自の方針で運用・セキュリティログを保存する場合があります。本リポジトリでは、その保存期間、保存場所、国外への移転の取り決めは確認できないため、ログが一切残らないとは保証しません。' },
-    { title: '埋め込みゲームと外部リンク', body: 'ゲームを起動すると、埋め込みフレーム内に提供者のサイトを読み込みます。ゲームは独自に通信し、Cookie やブラウザーストレージを使用し、独自のプライバシー通知に基づいてプレイ情報などを処理する場合があります。本サイトの sandbox は一部のブラウザー機能を制限しますが、ゲームによるすべての情報収集を防ぐものではありません。外部リンクは GitHub など独立して運営されるサービスへ移動します。プレイや情報提供の前に、該当する提供者のプライバシー通知を確認してください。本声明はそれらに代わるものではありません。' },
-    { title: '選択と削除', body: '本サイトで言語、テーマ、音楽の設定を変更できます。ブラウザー設定から本サイトのデータを消去すると、保存した設定とオフラインキャッシュを削除できますが、オフライン機能も利用できなくなる場合があります。ストレージや Cookie を制限することもできますが、一部の機能やゲームが動作しなくなる場合があります。ysgs.app のデータ消去では、ゲーム提供者が別のオリジンに保存したデータやサーバーログは削除されるとは限りません。提供者が保有する情報については、その提供者のプライバシー窓口へお問い合わせください。' },
-    { title: 'お問い合わせと更新', body: '本声明に関する一般的なご質問は、下記のサイトのソースコードリポジトリを通じて YuStellarGamesStudio へお寄せください。GitHub issue は公開されるため、個人情報、認証情報、その他の機密情報を投稿しないでください。セキュリティ報告は同リポジトリの SECURITY.md に従ってください。関連する取り扱いが変わる際は、本声明と更新日を更新します。英語、繁体字中国語、日本語の各版は同じ取り扱いを説明しています。' },
+    { title: '概要', body: [
+      '星語ゲームズには、アカウント、会員登録、お問い合わせフォーム、コメント、アップロードの機能はなく、氏名やメールアドレスなどの連絡先を求めることもありません。本サイト自身のコードは Cookie を設定せず、アクセス解析、広告、操作記録、ソーシャルメディアのトラッキング用スクリプトも組み込んでいません。',
+      '本サイト自身が保存する情報は、表示と音楽に関する 4 つの設定と、公開されているサイトおよびカタログのファイルのオフライン用コピーのみで、すべてお使いのブラウザー内に保存されます。他のウェブサイトと同様に、ページ、カタログデータ、カバー画像、ゲームを読み込む際には、それらを配信するサービスへ通信が発生し、そのサービスは IP アドレスなどの技術情報を知ることができます。ゲームは埋め込みフレーム内で、各提供者の方針に基づいて動作します。',
+      '個人情報の販売や貸与、クロスコンテキスト行動ターゲティング広告のための共有、利用者のプロファイル作成、法的効果やそれに類する重大な影響を及ぼす自動化された意思決定は行いません。',
+    ] },
+    { title: '適用範囲と運営者', body: [
+      '本声明は、https://ysgs.app のウェブサイト、そのすべてのページ、およびブラウザーを通じて本サイトからインストールしたアプリに適用されます。YuStellarGamesStudio が本サイトを運営し、本声明に記載された取り扱いについて責任を負います。',
+      'プレイ画面で開くゲームのサイト、本サイトからリンクされている GitHub リポジトリ（ソースコードおよび GameCatalog のリポジトリを含む）、その他の外部サービスには適用されません。YuStellarGamesStudio が別のドメインで公開するゲームであっても、そのゲーム自体の情報の取り扱いは本声明の対象外です。',
+      '本声明における「個人情報」とは、特定の個人または特定可能な個人に関する情報をいいます。適用される法律によっては、IP アドレスなどの技術情報も個人情報に該当する場合があります。',
+    ] },
+    { title: '収集しない情報', body: [
+      '本サイトは、氏名、メールアドレス、電話番号、住所、生年月日、年齢、支払い情報、連絡先、写真、ファイルを求めたり受け取ったりしません。ブラウザーの位置情報、カメラ、マイク、通知、連絡先の機能を使用せず、端末のフィンガープリント取得や他サイトをまたいだ追跡を目的としたコードも実行しません。',
+      'ゲーム検索欄やデータページの「ジャンル辞書」の絞り込み欄に入力した文字と、その検索結果は、開いているページ内でのみ処理されます。ページのアドレスに追加されず、保存されず、どのサーバーにも送信されず、ページを離れるか再読み込みすると破棄されます。',
+    ] },
+    { title: '端末に保存される設定', body: [
+      '設定を変更すると、本サイトはブラウザー内の ysgs.app の localStorage に保存します。ysgs-locale は言語（en、zh-TW、ja）、ysgs-theme はテーマ（dark または light）、ysgs-music-enabled は BGM のオン・オフ（true または false）、ysgs-music-volume は音量を 0〜1 の範囲で 5% 刻みの数値として保存します。',
+      'これらの値は、選択内容を復元するためにブラウザー内で本サイトのコードだけが読み取り、通信には含まれません。変更するまでは、言語は英語（本サイトのコードはブラウザーの言語設定を読み取りません）、テーマは端末のライト・ダーク設定に従いますが保存はされません。音楽はオンですが、最初にページを操作するまで再生されず、音量は 5% です。',
+      '本サイト自身のコードは Cookie、sessionStorage、IndexedDB を使用しません。一部のプライベートブラウジングなどでストレージがブロックされている場合、設定は今回の訪問中のみ有効です。',
+    ] },
+    { title: 'オフラインキャッシュ', body: [
+      '公開版のサイトでは、service worker がファイルのコピーを保持し、通信がなくてもサイトを開いてカタログを表示できるようにします。ysgs-shell-<バージョン> キャッシュには現在のバージョンの HTML、JavaScript、CSS、アイコンなどのサイトファイルが含まれ、新しいバージョンに切り替わると古いバージョンのキャッシュは削除されます。ysgs-catalog キャッシュには、data.ysgs.app から取得した GameCatalog の各ファイルについて最後に成功した応答が保存され、通信可能なときはネットワークから更新されます。',
+      'これらのキャッシュには公開されているサイトとカタログの内容のみが含まれ、入力した情報は含まれません。ただし、キャッシュの存在から、そのブラウザーで ysgs.app が開かれたことが分かる場合があります。service worker はゲームのページやカバー画像を保存しませんが、ブラウザーが独自のルールで通常の HTTP キャッシュに保存する場合があります。',
+    ] },
+    { title: '訪問中に処理される情報', body: [
+      'ページを開いている間、ブラウザーは読み込んだカタログ、検索文字と絞り込み条件、データページの「ネットワークログ」を保持します。ネットワークログには、ページが行った各カタログリクエストのアドレス、HTTP ステータス、所要時間、データサイズが記録されます。これらの情報はページのメモリ内にのみ存在し、利用者本人にだけ表示され、ページを閉じるか再読み込みすると消去されます。エラーが発生した場合、技術的なエラーメッセージがブラウザーの開発者コンソールに出力されることがありますが、当方には送信されません。',
+      '一部の選択内容は、リンクできるようにページのアドレスに含まれます。選択したジャンル（?view=games&genre=…）、表示中のゲーム（?view=games&id=…）、プレイ中のゲーム（?play=…）です。これらのアドレスはブラウザーの履歴に保存され、ページの読み込みや再読み込みの際にホスティング事業者へ送信され、共有したリンクにも含まれます。',
+    ] },
+    { title: 'ネットワーク通信とサービス提供者', body: [
+      '本サイトを利用すると、ブラウザーは次の宛先に通信します。（1）ysgs.app：サイト本体、アイコン、BGM の楽譜とシンセサイザーのファイル。（2）data.ysgs.app：ゲームカタログ（allgames.json、categories.json、ゲームごとの記録）。（3）カタログに記載された HTTPS ホスト：カバー画像。（4）ゲームを開いたときのゲーム提供者のサイト。BGM は ysgs.app 上のファイルを使ってブラウザー内で生成され、第三者の音楽サービスやフォントサービスには接続しません。',
+      '2026年10月4日時点で、ysgs.app と data.ysgs.app は GitHub Pages で公開され、Cloudflare を経由して配信されているため、これらへの通信は GitHub と Cloudflare のネットワークを通過します。サーバーへの通信では必ず IP アドレスとリクエスト日時が伝わり、通常はリクエストしたアドレス（クエリを含む）、ブラウザーの User-Agent、優先言語、その他の標準的なヘッダーも含まれます。本サイトのコードは、これらの通信に Cookie、識別子、トラッキング用パラメーターを追加しません。',
+      'これらの提供者は、コンテンツの配信とキャッシュ、攻撃や不正利用の防止、運用統計の作成のために、各社のプライバシーポリシーに基づき、お住まいの国や地域以外でこれらの情報を処理する場合があります。YuStellarGamesStudio はその保存期間や保存場所を管理しておらず、記録が残らないことを保証できません。提供者から運営者に通信量やセキュリティに関する情報が提供された場合、サイトの運営、問題の調査、安全確保のためにのみ使用します。',
+      'リファラー情報は制限されています。カバー画像はリファラーなしで要求され、新しいタブで開くリンクには noreferrer が指定されています。ゲームのフレームの読み込みはブラウザーの既定のリファラーポリシーに従い、現在の主要ブラウザーでは通常、ゲーム提供者に伝わるのはページの完全なアドレスではなくオリジン https://ysgs.app/ のみです。',
+    ] },
+    { title: 'Cookie と類似技術', body: [
+      '本サイト自身のコードは Cookie を作成しません。2026年10月4日の確認では、ysgs.app と data.ysgs.app の応答は Cookie を設定していませんでした。Cloudflare などのインフラ提供者は、保護機能が作動した場合にセキュリティ上必要な Cookie を設定することがあり、これは提供者が管理します。プレイ画面のゲームは、ブラウザーの設定の範囲内で、自身のドメインで Cookie やその他のストレージを使用する場合があります。',
+    ] },
+    { title: '埋め込みゲーム', body: [
+      'ゲームを開くと、GameCatalog に記載された起動アドレスから、提供者のウェブページがプレイ画面のフレームに読み込まれます。お使いの言語向けのアドレスがある場合はそれが使われます。この時点から、ゲーム提供者はブラウザーからの通信を受け取り、IP アドレスなどのリクエスト情報を知ることができます。また、ゲームは独自のコードを実行し、独自のサーバーと通信し、独自のアクセス解析、広告、アカウント、購入機能を使用できます。',
+      'フレームは sandbox で制限されています。他のドメインのゲームは、スクリプトの実行、自身のドメインでの Cookie とストレージの使用、マウスポインターのロックができ、本サイトはさらに全画面表示、自動再生、ゲームパッド入力、クリップボードへの書き込みを許可しています。ゲームはメインページの移動、ポップアップの表示、フォームの送信、ダウンロードの開始はできず、本サイトはカメラ、マイク、位置情報へのアクセスを許可しません。ysgs.app 自体から配信されるゲームは、本サイトのストレージにアクセスできない状態で動作します。',
+      '本サイトはゲームの内容を読み取らず、スコア、進行状況、入力内容などのデータをフレームから受け取りません。ゲームが収集する情報は提供者が取り扱うため、プレイや情報の入力の前に、その提供者のプライバシー通知をご確認ください。ysgs.app のデータを消去しても、ゲームが自身のドメインに保存したデータは削除されません。',
+    ] },
+    { title: '外部リンク', body: [
+      'ソースコード、GameCatalog、その他の外部サイトへのリンクは新しいタブで開き、独立して運営されるサービスへ移動します。たとえば GitHub 上では GitHub のプライバシーステートメントが適用されます。ゲーム詳細のリンクは GameCatalog に由来し、本サイトはリンク、画像、ゲームの起動に HTTPS のアドレスのみを使用します。',
+    ] },
+    { title: 'インストール可能なアプリ', body: [
+      'ブラウザーから星語ゲームズをインストールすると、アプリは本サイトの manifest を使用し、そのブラウザーの ysgs.app と同じストレージ、キャッシュ、設定を共有します。インストールによって追加の権限が付与されることはなく、アプリはプッシュ通知、バックグラウンド同期、位置情報を使用しません。ブラウザーによっては、アプリをアンインストールしても本サイトの保存データが削除されないため、下記の方法で消去してください。',
+    ] },
+    { title: '利用目的、開示、保存期間', body: [
+      '本声明に記載した情報は、選択した言語とテーマでのサイト表示、選択した音量での音楽再生、オフライン利用の提供、コンテンツの配信、サービスの安全確保のためにのみ使用します。ブラウザーが前述の提供者へ行う通信、または法令により開示が求められる場合を除き、個人情報を第三者に開示しません。',
+      '設定とオフラインキャッシュは、利用者またはブラウザーが消去するまでブラウザー内に残ります。古いサイトのキャッシュは更新時に自動で削除され、各カタログファイルのコピーは次に成功した応答で置き換えられます。ページのメモリ内の情報はページを閉じると破棄されます。提供者の記録は各提供者の方針に従って保存されます。',
+    ] },
+    { title: 'セキュリティ', body: [
+      '本サイトは HTTPS でのみ配信され、ysgs.app とそのサブドメインに HTTP Strict Transport Security を適用し、他サイトへの埋め込みを拒否します。カタログの内容は信頼できない入力として扱い、プレーンテキストとして表示し、HTTPS のアドレスのみを使用します。ゲームは前述の sandbox 内で動作します。通信や保存の方法に完全に安全なものはなく、これらの対策は侵害された端末、ブラウザー拡張機能、第三者の提供者によるリスクを防ぐものではありません。',
+    ] },
+    { title: '子どもについて', body: [
+      '本サイトは年齢を尋ねず、子どもを含むいかなる人からも、故意に個人情報を収集しません。掲載ゲームの中にはすべての年齢に適さないものや、独自の年齢制限を設けているものがあります。保護者の方は、お子さまに遊ばせる前に、ゲームとその提供者の方針をご確認ください。',
+    ] },
+    { title: '選択肢と権利', body: [
+      '言語、テーマ、音楽の設定は、ヘッダーからいつでも変更できます。本サイトが保存したすべてのデータを削除するには、ブラウザーの設定で ysgs.app のサイトデータを削除してください。多くのブラウザーでは、保存した設定、オフラインキャッシュ、service worker が削除され、その後は既定の設定が使われ、読み込みには通信が必要になります。サイトのストレージをブロックすることもできますが、その場合は設定が記憶されません。',
+      'お住まいの地域によっては、個人情報へのアクセス、訂正、削除、処理への異議を申し立てる権利や、データ保護機関に苦情を申し立てる権利がある場合があります。本サイトは利用者に結び付くサーバー側の記録を保持していないため、通常は特定の訪問者に関する情報を探し出すことができません。ホスティングやネットワークの記録、ゲーム提供者が保有するデータについては、各提供者にご請求ください。本声明に関するご質問は引き続き受け付けています。',
+    ] },
+    { title: 'お問い合わせと更新', body: [
+      '本声明に関する一般的なご質問は、下記のサイトのソースコードリポジトリを通じて YuStellarGamesStudio へお寄せください。GitHub issue は公開されるため、個人情報、認証情報、その他の機密情報を投稿しないでください。セキュリティ報告は同リポジトリの SECURITY.md に従ってください。',
+      '関連する取り扱いが変わる場合は、変更の発効前または発効時に、本声明と更新日を更新します。英語、繁体字中国語、日本語の各版は同じ取り扱いを説明しています。',
+    ] },
   ],
   termsTitle: '利用規約',
   termsUpdated: '最終更新日：2026年10月4日',
