@@ -114,10 +114,9 @@ npm run preview
   scheduled-deploy.yml         # 每 5 分鐘以 github-actions[bot] 派送 Pages 部署
 design/
   og-image.svg                 # 分享圖原始檔（修改後重新輸出成 public/og-image.png）
-  favicon.svg                  # 網站圖示原始檔（修改後重新輸出成 public/favicon.ico）
 public/
   favicon.ico                  # 16／32／48 px 網站圖示
-  icon.svg                     # App 圖示原始檔，也直接作為 SVG 圖示（修改後重新輸出下列 PNG）
+  icon.svg                     # 網站與 App 圖示原始檔，也直接作為 SVG 圖示（修改後重新輸出 favicon.ico 與下列 PNG）
   icon-192.png、icon-512.png   # PWA 圖示
   icon-maskable-512.png        # Android 可裁切圖示（圖形縮在安全區內）
   apple-touch-icon.png         # 180 px iOS 主畫面圖示

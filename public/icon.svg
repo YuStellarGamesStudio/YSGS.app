@@ -1,8 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#04060d"/>
-  <circle cx="256" cy="256" r="200" fill="#36f1ff" fill-opacity="0.06"/>
-  <g transform="translate(64 64) scale(8)">
-    <path d="M24 3 42 13.5v21L24 45 6 34.5v-21Z" fill="#36f1ff" fill-opacity="0.1" stroke="#36f1ff" stroke-width="2" stroke-linejoin="round"/>
-    <path d="m24 13 2.9 8.1L35 24l-8.1 2.9L24 35l-2.9-8.1L13 24l8.1-2.9Z" fill="#ff3ea5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101a33"/>
+      <stop offset="1" stop-color="#04060d"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#36f1ff" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#36f1ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="star" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#bff9ff"/>
+      <stop offset="1" stop-color="#36f1ff"/>
+    </linearGradient>
+    <linearGradient id="orbit" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#36f1ff"/>
+      <stop offset="1" stop-color="#ff3ea5"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none" stroke="#36f1ff" stroke-opacity="0.22" stroke-width="1.5"/>
+  <circle cx="32" cy="32" r="21" fill="url(#glow)"/>
+
+  <g transform="translate(32 32) rotate(-28)" fill="none" stroke="url(#orbit)" stroke-width="3.5" stroke-linecap="round">
+    <!-- Back half of the orbit sits behind the star; the front half crosses over it. -->
+    <path d="M-27 0A27 9 0 0 1 27 0" stroke-opacity="0.45"/>
+    <path d="M32 7C33.7 22.5 41.5 30.3 57 32 41.5 33.7 33.7 41.5 32 57 30.3 41.5 22.5 33.7 7 32 22.5 30.3 30.3 22.5 32 7Z" transform="rotate(28) translate(-32 -32)" fill="url(#star)" stroke="none"/>
+    <path d="M-27 0A27 9 0 0 0 27 0"/>
+    <circle cx="27" cy="0" r="4.5" fill="#ff3ea5" stroke="#04060d" stroke-width="2"/>
   </g>
 </svg>
